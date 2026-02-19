@@ -98,7 +98,7 @@ AgentMesh is a **transparent proxy** that sits between your AI agents and their 
 | **Zero agent modification** | Requires SDK changes | Requires instrumentation | **One env var change** |
 | **Agent auto-discovery** | Manual inventory | Manual tagging | **Automatic** — discovers agents from traffic |
 | **Cost attribution** | DIY | Generic metrics | **Per-agent, per-model, per-request** |
-| **PII detection** | Not built-in | Add-on | **Built-in** — email, phone, SSN, credit cards |
+| **PII detection** | Not built-in | Add-on | **Pattern flagging** — detects patterns; masking available with [Govrix Platform](https://agentmesh.io) |
 | **Compliance-ready audit trail** | No | No | **Yes** — cryptographic lineage hash chain |
 | **Latency overhead** | Varies | 10-50ms | **<5ms p99** |
 | **Self-hosted** | Depends | SaaS-only | **100% self-hosted, your data stays yours** |
@@ -202,17 +202,17 @@ Know exactly where your AI spend is going — by agent, by model, by day. No mor
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### PII Detection — Before It's a Breach
+### PII Pattern Flagging
 
-AgentMesh scans every request and response for sensitive data patterns. Detect leaks before they become incidents.
+AgentMesh flags sensitive data patterns in request and response payloads, logging their type and location so you know when PII flows through your agent traffic.
 
-- **Email addresses** — `john.doe@company.com` → detected, location logged
+- **Email addresses** — `john.doe@company.com` → flagged in compliance tag
 - **Phone numbers** — US format patterns
 - **Social Security Numbers** — `XXX-XX-XXXX` patterns
 - **Credit card numbers** — Major card patterns (Luhn-eligible)
 - **IP addresses** — Internal network addresses in prompts
 
-> AgentMesh **never stores the actual PII value** — only the type and location. Your compliance team will thank you.
+> AgentMesh **detects and flags** PII patterns — it does not store the actual values. For **real-time PII masking and blocking** (redacting sensitive data before it reaches the upstream API), see [Govrix Platform](https://agentmesh.io).
 
 ### Tamper-Evident Audit Trail
 
@@ -530,8 +530,9 @@ make clean       # Remove artifacts
 ✓ Tamper-evident lineage chain
   → SHA-256 Merkle hash per event
 
-✓ Built-in PII detection
+✓ PII pattern flagging
   → 5 pattern types, zero PII storage
+  → Masking/blocking via Govrix Platform
 
 ✓ Session-grouped audit trail
   → Reconstruct any agent conversation
