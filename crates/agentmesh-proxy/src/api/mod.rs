@@ -38,8 +38,27 @@ pub async fn serve_with_pool(
     config: Config,
     metrics: Arc<Metrics>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    serve_with_pool_and_routes(addr, pool, config, metrics, None).await
+}
+
+/// Start the management API with extra routes merged into the base router.
+///
+/// `extra_routes` is an optional axum Router that will be merged into Scout's
+/// base router. Use this from Govrix Platform to add `/api/v1/policies`,
+/// `/api/v1/tenants`, etc. without modifying Scout internals.
+pub async fn serve_with_pool_and_routes(
+    addr: SocketAddr,
+    pool: agentmesh_store::StorePool,
+    config: Config,
+    metrics: Arc<Metrics>,
+    extra_routes: Option<axum::Router>,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let state = state::AppState::new(pool, config, metrics);
-    let app = router::create_router_with_auth(state);
+    let mut app = router::create_router_with_auth(state);
+
+    if let Some(extra) = extra_routes {
+        app = app.merge(extra);
+    }
 
     tracing::info!("management API listening on {}", addr);
 
