@@ -25,6 +25,7 @@ use agentmesh_common::protocols::Protocol;
 use crate::events::{compute_lineage_hash, EventSender, Metrics, SessionTracker};
 use crate::policy::PolicyHook;
 use crate::proxy::streaming::SseAccumulator;
+use crate::proxy::upstream::UpstreamUrls;
 
 /// Shared interceptor state — session tracker and event sender.
 ///
@@ -36,6 +37,8 @@ pub struct InterceptorState {
     pub metrics: Arc<Metrics>,
     /// Policy hook — called after building each event to compute compliance_tag.
     pub policy_hook: Arc<dyn PolicyHook>,
+    /// Configurable upstream base URLs for each provider.
+    pub upstream_urls: Arc<UpstreamUrls>,
 }
 
 impl InterceptorState {
@@ -49,6 +52,23 @@ impl InterceptorState {
             event_sender,
             metrics,
             policy_hook,
+            upstream_urls: Arc::new(UpstreamUrls::default()),
+        }
+    }
+
+    /// Create a new InterceptorState with custom upstream URLs.
+    pub fn with_upstream_urls(
+        event_sender: EventSender,
+        metrics: Arc<Metrics>,
+        policy_hook: Arc<dyn PolicyHook>,
+        upstream_urls: UpstreamUrls,
+    ) -> Self {
+        Self {
+            session_tracker: Mutex::new(SessionTracker::new()),
+            event_sender,
+            metrics,
+            policy_hook,
+            upstream_urls: Arc::new(upstream_urls),
         }
     }
 }

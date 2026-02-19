@@ -12,10 +12,35 @@
 use bytes::Bytes;
 use http_body_util::Full;
 use hyper::Response;
-use std::sync::OnceLock;
+use std::sync::{Arc, OnceLock};
 use std::time::Duration;
 
 use agentmesh_common::protocols::Protocol;
+
+/// Configurable upstream base URLs for each provider.
+///
+/// Defaults match the production LLM API endpoints. Override via config
+/// or environment variables for integration testing with mock servers.
+#[derive(Debug, Clone)]
+pub struct UpstreamUrls {
+    pub openai: String,
+    pub anthropic: String,
+    pub mcp: String,
+    pub a2a: String,
+    pub unknown: String,
+}
+
+impl Default for UpstreamUrls {
+    fn default() -> Self {
+        Self {
+            openai: "https://api.openai.com".to_string(),
+            anthropic: "https://api.anthropic.com".to_string(),
+            mcp: "http://localhost:3001".to_string(),
+            a2a: "http://localhost:3002".to_string(),
+            unknown: "http://localhost:8080".to_string(),
+        }
+    }
+}
 
 static SHARED_CLIENT: OnceLock<reqwest::Client> = OnceLock::new();
 
@@ -56,8 +81,9 @@ pub async fn forward(
     parts: http::request::Parts,
     body: Bytes,
     protocol: &Protocol,
+    upstream_urls: &Arc<UpstreamUrls>,
 ) -> Result<Response<Full<Bytes>>, Box<dyn std::error::Error + Send + Sync>> {
-    let upstream_url = build_upstream_url(&parts, protocol);
+    let upstream_url = build_upstream_url(&parts, protocol, upstream_urls);
 
     tracing::debug!(
         method = %parts.method,
@@ -137,8 +163,9 @@ pub async fn forward_streaming_collect(
     parts: http::request::Parts,
     body: Bytes,
     protocol: &Protocol,
+    upstream_urls: &Arc<UpstreamUrls>,
 ) -> Result<(u16, String, Bytes), Box<dyn std::error::Error + Send + Sync>> {
-    let upstream_url = build_upstream_url(&parts, protocol);
+    let upstream_url = build_upstream_url(&parts, protocol, upstream_urls);
 
     tracing::debug!(
         method = %parts.method,
@@ -174,8 +201,12 @@ pub async fn forward_streaming_collect(
 }
 
 /// Build the full upstream URL from request parts and protocol.
-pub fn build_upstream_url(parts: &http::request::Parts, protocol: &Protocol) -> String {
-    let upstream_base = resolve_upstream_base(protocol);
+pub fn build_upstream_url(
+    parts: &http::request::Parts,
+    protocol: &Protocol,
+    upstream_urls: &UpstreamUrls,
+) -> String {
+    let upstream_base = resolve_upstream_base(protocol, upstream_urls);
     let path_and_query = parts
         .uri
         .path_and_query()
@@ -185,14 +216,14 @@ pub fn build_upstream_url(parts: &http::request::Parts, protocol: &Protocol) -> 
     format!("{}{}", upstream_base, api_path)
 }
 
-/// Resolve the upstream base URL from the protocol.
-fn resolve_upstream_base(protocol: &Protocol) -> &'static str {
+/// Resolve the upstream base URL from the protocol, using configured URLs.
+fn resolve_upstream_base<'a>(protocol: &Protocol, urls: &'a UpstreamUrls) -> &'a str {
     match protocol {
-        Protocol::OpenAI { .. } => "https://api.openai.com",
-        Protocol::Anthropic { .. } => "https://api.anthropic.com",
-        Protocol::Mcp { .. } => "http://localhost:3001", // local MCP server stub
-        Protocol::A2A => "http://localhost:3002",        // local A2A stub
-        Protocol::Unknown => "http://localhost:8080",    // passthrough stub
+        Protocol::OpenAI { .. } => &urls.openai,
+        Protocol::Anthropic { .. } => &urls.anthropic,
+        Protocol::Mcp { .. } => &urls.mcp,
+        Protocol::A2A => &urls.a2a,
+        Protocol::Unknown => &urls.unknown,
     }
 }
 
@@ -305,7 +336,8 @@ mod tests {
             version: "v1".to_string(),
             streaming: false,
         };
-        let url = build_upstream_url(&parts, &proto);
+        let urls = UpstreamUrls::default();
+        let url = build_upstream_url(&parts, &proto, &urls);
         assert_eq!(url, "https://api.openai.com/v1/chat/completions");
     }
 
@@ -322,7 +354,50 @@ mod tests {
             version: "v1".to_string(),
             streaming: false,
         };
-        let url = build_upstream_url(&parts, &proto_anth);
+        let urls = UpstreamUrls::default();
+        let url = build_upstream_url(&parts, &proto_anth, &urls);
         assert_eq!(url, "https://api.anthropic.com/v1/messages");
+    }
+
+    #[test]
+    fn build_upstream_url_custom_openai() {
+        let parts = http::Request::builder()
+            .method("POST")
+            .uri("/proxy/openai/v1/chat/completions")
+            .body(())
+            .unwrap()
+            .into_parts()
+            .0;
+        let proto = Protocol::OpenAI {
+            version: "v1".to_string(),
+            streaming: false,
+        };
+        let urls = UpstreamUrls {
+            openai: "http://localhost:9999".to_string(),
+            ..UpstreamUrls::default()
+        };
+        let url = build_upstream_url(&parts, &proto, &urls);
+        assert_eq!(url, "http://localhost:9999/v1/chat/completions");
+    }
+
+    #[test]
+    fn build_upstream_url_custom_anthropic() {
+        let parts = http::Request::builder()
+            .method("POST")
+            .uri("/proxy/anthropic/v1/messages")
+            .body(())
+            .unwrap()
+            .into_parts()
+            .0;
+        let proto = Protocol::Anthropic {
+            version: "v1".to_string(),
+            streaming: false,
+        };
+        let urls = UpstreamUrls {
+            anthropic: "http://mock:8080".to_string(),
+            ..UpstreamUrls::default()
+        };
+        let url = build_upstream_url(&parts, &proto, &urls);
+        assert_eq!(url, "http://mock:8080/v1/messages");
     }
 }

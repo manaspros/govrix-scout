@@ -96,8 +96,26 @@ async fn main() -> anyhow::Result<()> {
     // Pass the event sender and metrics into the proxy for fire-and-forget event logging
     let proxy_event_sender = event_sender.clone();
     let proxy_metrics = metrics.clone();
+    let upstream_urls = proxy::UpstreamUrls {
+        openai: config.proxy.upstream_openai.clone(),
+        anthropic: config.proxy.upstream_anthropic.clone(),
+        ..proxy::UpstreamUrls::default()
+    };
+    tracing::info!(
+        openai = %upstream_urls.openai,
+        anthropic = %upstream_urls.anthropic,
+        "upstream URLs configured"
+    );
     let proxy_handle = tokio::spawn(async move {
-        if let Err(e) = proxy::serve(proxy_addr, proxy_event_sender, proxy_metrics).await {
+        if let Err(e) = proxy::serve_full(
+            proxy_addr,
+            proxy_event_sender,
+            proxy_metrics,
+            std::sync::Arc::new(agentmesh_proxy::policy::NoOpPolicy),
+            upstream_urls,
+        )
+        .await
+        {
             tracing::error!("proxy server error: {}", e);
         }
     });

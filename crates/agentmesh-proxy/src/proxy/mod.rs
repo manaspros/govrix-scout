@@ -19,13 +19,13 @@ use std::sync::Arc;
 use crate::events::{EventSender, Metrics};
 use crate::policy::{NoOpPolicy, PolicyHook};
 use interceptor::InterceptorState;
+pub use upstream::UpstreamUrls;
 
-/// Start the hyper proxy server with a custom policy hook.
+/// Start the hyper proxy server with default upstream URLs.
 ///
 /// Binds to `addr` and serves all incoming connections through `handler::proxy_handler`.
 /// The `event_sender` is shared across all connections via Arc.
 /// The `metrics` Arc is shared with the management API for real counter reads.
-/// The `policy_hook` is called after building each event to compute the compliance tag.
 pub async fn serve(
     addr: SocketAddr,
     event_sender: EventSender,
@@ -34,12 +34,33 @@ pub async fn serve(
     serve_with_policy(addr, event_sender, metrics, Arc::new(NoOpPolicy)).await
 }
 
-/// Start the hyper proxy server with a custom policy hook.
+/// Start the hyper proxy server with a custom policy hook and default upstream URLs.
 pub async fn serve_with_policy(
     addr: SocketAddr,
     event_sender: EventSender,
     metrics: Arc<Metrics>,
     policy_hook: Arc<dyn PolicyHook>,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    serve_full(
+        addr,
+        event_sender,
+        metrics,
+        policy_hook,
+        UpstreamUrls::default(),
+    )
+    .await
+}
+
+/// Start the hyper proxy server with a custom policy hook and custom upstream URLs.
+///
+/// This is the fully-parameterized entry point. Use this for integration testing
+/// with mock upstream servers.
+pub async fn serve_full(
+    addr: SocketAddr,
+    event_sender: EventSender,
+    metrics: Arc<Metrics>,
+    policy_hook: Arc<dyn PolicyHook>,
+    upstream_urls: UpstreamUrls,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     use hyper::server::conn::http1;
     use hyper_util::rt::TokioIo;
@@ -49,7 +70,12 @@ pub async fn serve_with_policy(
     tracing::info!("proxy listening on {}", addr);
 
     // Shared interceptor state — one instance for the whole server
-    let state = Arc::new(InterceptorState::new(event_sender, metrics, policy_hook));
+    let state = Arc::new(InterceptorState::with_upstream_urls(
+        event_sender,
+        metrics,
+        policy_hook,
+        upstream_urls,
+    ));
 
     loop {
         let (stream, peer_addr) = listener.accept().await?;

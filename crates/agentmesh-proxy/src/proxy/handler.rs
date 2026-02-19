@@ -59,7 +59,7 @@ pub async fn proxy_handler(
     let is_streaming = protocol.is_streaming();
 
     // ── Build upstream URL ────────────────────────────────────────────────────
-    let upstream_url = upstream::build_upstream_url(&parts, &protocol);
+    let upstream_url = upstream::build_upstream_url(&parts, &protocol, &state.upstream_urls);
 
     // ── Build request context for event logging ───────────────────────────────
     let ctx = Arc::new(RequestContext {
@@ -111,7 +111,7 @@ async fn forward_buffered(
     state: Arc<InterceptorState>,
     start: Instant,
 ) -> Result<Response<Full<Bytes>>, Box<dyn std::error::Error + Send + Sync>> {
-    let resp = upstream::forward(parts, body_bytes, protocol).await?;
+    let resp = upstream::forward(parts, body_bytes, protocol, &state.upstream_urls).await?;
     let latency_ms = start.elapsed().as_millis() as u32;
 
     let status = resp.status().as_u16();
@@ -166,7 +166,8 @@ async fn forward_streaming(
     start: Instant,
 ) -> Result<Response<Full<Bytes>>, Box<dyn std::error::Error + Send + Sync>> {
     let (status, content_type, resp_bytes) =
-        upstream::forward_streaming_collect(parts, body_bytes, protocol).await?;
+        upstream::forward_streaming_collect(parts, body_bytes, protocol, &state.upstream_urls)
+            .await?;
     let latency_ms = start.elapsed().as_millis() as u32;
 
     tracing::debug!(
