@@ -23,6 +23,7 @@ use agentmesh_common::models::event::{AgentEvent, EventDirection, Provider};
 use agentmesh_common::protocols::Protocol;
 
 use crate::events::{compute_lineage_hash, EventSender, Metrics, SessionTracker};
+use crate::policy::PolicyHook;
 use crate::proxy::streaming::SseAccumulator;
 
 /// Shared interceptor state — session tracker and event sender.
@@ -33,14 +34,21 @@ pub struct InterceptorState {
     pub event_sender: EventSender,
     /// Shared Prometheus-facing metrics counters.
     pub metrics: Arc<Metrics>,
+    /// Policy hook — called after building each event to compute compliance_tag.
+    pub policy_hook: Arc<dyn PolicyHook>,
 }
 
 impl InterceptorState {
-    pub fn new(event_sender: EventSender, metrics: Arc<Metrics>) -> Self {
+    pub fn new(
+        event_sender: EventSender,
+        metrics: Arc<Metrics>,
+        policy_hook: Arc<dyn PolicyHook>,
+    ) -> Self {
         Self {
             session_tracker: Mutex::new(SessionTracker::new()),
             event_sender,
             metrics,
+            policy_hook,
         }
     }
 }
@@ -86,7 +94,7 @@ pub async fn log_request_event(ctx: &RequestContext, state: &InterceptorState) {
         ctx.upstream_url.clone(),
         provider,
         lineage_hash.clone(),
-        "audit:none", // Phase 2: policy engine sets this
+        "audit:none", // overridden below by policy hook
     );
 
     // Override the generated id with our pre-computed one
@@ -129,6 +137,9 @@ pub async fn log_request_event(ctx: &RequestContext, state: &InterceptorState) {
     }
 
     event.raw_size_bytes = Some(ctx.request_body.len() as i64);
+
+    // ── Policy hook: compute compliance_tag ──────────────────────────────────
+    event.compliance_tag = state.policy_hook.compliance_tag(&event);
 
     // Update session lineage
     {
@@ -250,6 +261,9 @@ pub async fn log_response_event(
             }
         }
     }
+
+    // ── Policy hook: compute compliance_tag ──────────────────────────────────
+    event.compliance_tag = state.policy_hook.compliance_tag(&event);
 
     // Update session lineage
     {
