@@ -1,5 +1,6 @@
-use agentmesh_common::models::AgentEvent;
 use serde::{Deserialize, Serialize};
+
+// ── Decision type ───────────────────────────────────────────────────────────
 
 /// The outcome of evaluating an event against the policy engine.
 #[derive(Debug, Clone, PartialEq)]
@@ -9,80 +10,57 @@ pub enum PolicyDecision {
     Alert { message: String },
 }
 
-/// The action a rule takes when its condition matches.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum RuleAction {
-    Allow,
-    Block,
-    Alert,
-}
-
-/// The condition that a rule checks against an event.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case")]
-pub enum PolicyCondition {
-    /// Block / alert when the event model is in the provided list.
-    ModelBlocked { models: Vec<String> },
-    /// Block / alert when total_tokens exceeds the given threshold.
-    MaxTokens { limit: u64 },
-    /// Block / alert when cost_usd exceeds the given threshold.
-    MaxCostUsd { limit_usd: f64 },
-    /// Block / alert when the agent_id is in the provided list.
-    AgentBlocked { agents: Vec<String> },
-}
+// ── Rule model ──────────────────────────────────────────────────────────────
 
 /// A single named policy rule.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PolicyRule {
     pub name: String,
     pub description: Option<String>,
-    pub condition: PolicyCondition,
-    pub action: RuleAction,
+    pub enabled: bool,
+    #[serde(default)]
+    pub conditions: Vec<Condition>,
+    pub action: Action,
 }
 
-impl PolicyRule {
-    /// Returns `true` when this rule's condition matches the event.
-    fn matches(&self, event: &AgentEvent) -> bool {
-        match &self.condition {
-            PolicyCondition::ModelBlocked { models } => event
-                .model
-                .as_deref()
-                .map(|m| models.iter().any(|blocked| blocked == m))
-                .unwrap_or(false),
-
-            PolicyCondition::MaxTokens { limit } => event
-                .total_tokens
-                .map(|t| t as u64 > *limit)
-                .unwrap_or(false),
-
-            PolicyCondition::MaxCostUsd { limit_usd } => event
-                .cost_usd
-                .map(|c| {
-                    // rust_decimal::Decimal → f64 for comparison
-                    let cost_f64: f64 = c.try_into().unwrap_or(f64::MAX);
-                    cost_f64 > *limit_usd
-                })
-                .unwrap_or(false),
-
-            PolicyCondition::AgentBlocked { agents } => {
-                agents.iter().any(|blocked| blocked == &event.agent_id)
-            }
-        }
-    }
+/// A generic field condition: `<field> <operator> <value>`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Condition {
+    /// Event field to inspect. Supported: "model", "agent_id", "provider",
+    /// "direction", "cost_usd", "input_tokens", "output_tokens".
+    pub field: String,
+    pub operator: Operator,
+    /// Value to compare against (always a string; numeric operators parse it).
+    pub value: String,
 }
 
-/// YAML schema for loading a list of rules.
-#[derive(Debug, Deserialize)]
-struct RulesFile {
-    rules: Vec<PolicyRule>,
+/// Comparison operators for conditions.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Operator {
+    Equals,
+    NotEquals,
+    Contains,
+    GreaterThan,
+    LessThan,
+    Matches, // regex
 }
 
-/// The policy engine that evaluates events against an ordered list of rules.
+/// Action taken when all conditions on a rule match.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Action {
+    Allow,
+    Block,
+    Alert,
+}
+
+// ── Engine ──────────────────────────────────────────────────────────────────
+
+/// Policy engine that evaluates `AgentEvent`s against an ordered list of rules.
 ///
-/// Rules are evaluated in order; the first matching Block or Alert terminates
-/// evaluation.  If no rule matches (or all matching rules are Allow), the
-/// engine returns `PolicyDecision::Allow`.
+/// Rules are evaluated in insertion order. The first enabled rule whose every
+/// condition matches wins. If no rule matches, the default decision is `Allow`.
 #[derive(Debug, Default)]
 pub struct PolicyEngine {
     rules: Vec<PolicyRule>,
@@ -94,67 +72,128 @@ impl PolicyEngine {
         Self::default()
     }
 
-    /// Append a rule to the engine.
-    pub fn add_rule(&mut self, rule: PolicyRule) {
-        self.rules.push(rule);
+    /// Replace the current rule set.
+    pub fn load_rules(&mut self, rules: Vec<PolicyRule>) {
+        self.rules = rules;
     }
 
-    /// Parse rules from a YAML string and add them to the engine.
+    /// Parse a YAML list of rules.
     ///
-    /// Expected format:
+    /// Expected format (top-level sequence):
     /// ```yaml
-    /// rules:
-    ///   - name: "block-gpt4"
-    ///     description: "Disallow GPT-4"
-    ///     condition:
-    ///       type: model_blocked
-    ///       models: ["gpt-4"]
-    ///     action: block
+    /// - name: block-gpt4
+    ///   enabled: true
+    ///   conditions:
+    ///     - field: model
+    ///       operator: equals
+    ///       value: gpt-4
+    ///   action: block
     /// ```
-    pub fn load_from_yaml(&mut self, yaml_str: &str) -> Result<(), serde_yaml::Error> {
-        let file: RulesFile = serde_yaml::from_str(yaml_str)?;
-        self.rules.extend(file.rules);
-        Ok(())
+    pub fn load_yaml(yaml_str: &str) -> Result<Vec<PolicyRule>, serde_yaml::Error> {
+        serde_yaml::from_str(yaml_str)
     }
 
-    /// Evaluate the event against all rules in insertion order.
+    /// Evaluate `event` against all loaded rules in order.
     ///
-    /// First matching Block → `PolicyDecision::Block`.
-    /// First matching Alert → `PolicyDecision::Alert`.
-    /// No match (or only Allow matches) → `PolicyDecision::Allow`.
-    pub fn evaluate(&self, event: &AgentEvent) -> PolicyDecision {
+    /// Returns the decision of the first matching, enabled rule. Falls through
+    /// to `Allow` when no rule matches.
+    pub fn evaluate(&self, event: &agentmesh_common::models::AgentEvent) -> PolicyDecision {
         for rule in &self.rules {
-            if rule.matches(event) {
-                match rule.action {
-                    RuleAction::Block => {
-                        return PolicyDecision::Block {
-                            reason: format!("rule '{}' blocked this event", rule.name),
-                        };
-                    }
-                    RuleAction::Alert => {
-                        return PolicyDecision::Alert {
-                            message: format!("rule '{}' triggered an alert", rule.name),
-                        };
-                    }
-                    RuleAction::Allow => {
-                        // explicit Allow — continue to next rule
-                    }
-                }
+            if !rule.enabled {
+                continue;
+            }
+            if self.matches_all_conditions(event, &rule.conditions) {
+                return match &rule.action {
+                    Action::Block => PolicyDecision::Block {
+                        reason: format!("blocked by rule: {}", rule.name),
+                    },
+                    Action::Alert => PolicyDecision::Alert {
+                        message: format!("alert from rule: {}", rule.name),
+                    },
+                    Action::Allow => PolicyDecision::Allow,
+                };
             }
         }
         PolicyDecision::Allow
     }
+
+    fn matches_all_conditions(
+        &self,
+        event: &agentmesh_common::models::AgentEvent,
+        conditions: &[Condition],
+    ) -> bool {
+        conditions.iter().all(|c| self.matches_condition(event, c))
+    }
+
+    fn matches_condition(
+        &self,
+        event: &agentmesh_common::models::AgentEvent,
+        condition: &Condition,
+    ) -> bool {
+        let field_value = self.get_field_value(event, &condition.field);
+        match &condition.operator {
+            Operator::Equals => field_value == condition.value,
+            Operator::NotEquals => field_value != condition.value,
+            Operator::Contains => field_value.contains(condition.value.as_str()),
+            Operator::GreaterThan => field_value
+                .parse::<f64>()
+                .ok()
+                .zip(condition.value.parse::<f64>().ok())
+                .map(|(a, b)| a > b)
+                .unwrap_or(false),
+            Operator::LessThan => field_value
+                .parse::<f64>()
+                .ok()
+                .zip(condition.value.parse::<f64>().ok())
+                .map(|(a, b)| a < b)
+                .unwrap_or(false),
+            Operator::Matches => regex::Regex::new(&condition.value)
+                .map(|re| re.is_match(&field_value))
+                .unwrap_or(false),
+        }
+    }
+
+    /// Extract the string value of a named field from `event`.
+    ///
+    /// Unknown field names return an empty string so that conditions on them
+    /// never accidentally match.
+    fn get_field_value(
+        &self,
+        event: &agentmesh_common::models::AgentEvent,
+        field: &str,
+    ) -> String {
+        match field {
+            "model" => event.model.clone().unwrap_or_default(),
+            "agent_id" => event.agent_id.clone(),
+            "provider" => event.provider.to_string(),
+            "direction" => event.direction.to_string(),
+            "cost_usd" => event
+                .cost_usd
+                .map(|c| c.to_string())
+                .unwrap_or_default(),
+            "input_tokens" => event
+                .input_tokens
+                .map(|t| t.to_string())
+                .unwrap_or_default(),
+            "output_tokens" => event
+                .output_tokens
+                .map(|t| t.to_string())
+                .unwrap_or_default(),
+            _ => String::new(),
+        }
+    }
 }
+
+// ── Tests ───────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use agentmesh_common::models::event::{EventDirection, Provider};
-    use rust_decimal::Decimal;
     use uuid::Uuid;
 
-    fn base_event() -> AgentEvent {
-        AgentEvent::new(
+    fn make_event() -> agentmesh_common::models::AgentEvent {
+        agentmesh_common::models::AgentEvent::new(
             "agent-001",
             Uuid::now_v7(),
             EventDirection::Outbound,
@@ -166,207 +205,246 @@ mod tests {
         )
     }
 
-    // ── 1. Empty engine always allows ──────────────────────────────────────────
-
+    // 1. Empty rules → Allow
     #[test]
-    fn empty_engine_allows_everything() {
+    fn empty_rules_always_allow() {
         let engine = PolicyEngine::new();
-        let event = base_event();
+        let event = make_event();
         assert_eq!(engine.evaluate(&event), PolicyDecision::Allow);
     }
 
-    // ── 2. Model blocked ───────────────────────────────────────────────────────
-
+    // 2. Single block rule that matches → Block
     #[test]
-    fn model_blocked_returns_block() {
+    fn block_rule_matches() {
         let mut engine = PolicyEngine::new();
-        engine.add_rule(PolicyRule {
-            name: "no-gpt4".to_string(),
-            description: Some("Disallow GPT-4".to_string()),
-            condition: PolicyCondition::ModelBlocked {
-                models: vec!["gpt-4".to_string()],
-            },
-            action: RuleAction::Block,
-        });
+        engine.load_rules(vec![PolicyRule {
+            name: "no-openai".to_string(),
+            description: None,
+            enabled: true,
+            conditions: vec![Condition {
+                field: "provider".to_string(),
+                operator: Operator::Equals,
+                value: "openai".to_string(),
+            }],
+            action: Action::Block,
+        }]);
 
-        let mut event = base_event();
-        event.model = Some("gpt-4".to_string());
-
-        assert!(matches!(
+        let event = make_event(); // provider = OpenAI
+        assert_eq!(
             engine.evaluate(&event),
-            PolicyDecision::Block { .. }
-        ));
+            PolicyDecision::Block {
+                reason: "blocked by rule: no-openai".to_string(),
+            }
+        );
     }
 
+    // 3. Block rule that does not match → Allow
     #[test]
-    fn model_not_in_blocklist_allows() {
+    fn block_rule_no_match_allows() {
         let mut engine = PolicyEngine::new();
-        engine.add_rule(PolicyRule {
-            name: "no-gpt4".to_string(),
+        engine.load_rules(vec![PolicyRule {
+            name: "no-anthropic".to_string(),
             description: None,
-            condition: PolicyCondition::ModelBlocked {
-                models: vec!["gpt-4".to_string()],
-            },
-            action: RuleAction::Block,
-        });
+            enabled: true,
+            conditions: vec![Condition {
+                field: "provider".to_string(),
+                operator: Operator::Equals,
+                value: "anthropic".to_string(),
+            }],
+            action: Action::Block,
+        }]);
 
-        let mut event = base_event();
-        event.model = Some("gpt-3.5-turbo".to_string());
-
+        let event = make_event(); // provider = OpenAI — does not match
         assert_eq!(engine.evaluate(&event), PolicyDecision::Allow);
     }
 
-    // ── 3. Max tokens exceeded ─────────────────────────────────────────────────
-
+    // 4. Alert rule → Alert
     #[test]
-    fn max_tokens_exceeded_blocks() {
+    fn alert_rule_matches() {
         let mut engine = PolicyEngine::new();
-        engine.add_rule(PolicyRule {
-            name: "token-limit".to_string(),
-            description: None,
-            condition: PolicyCondition::MaxTokens { limit: 1_000 },
-            action: RuleAction::Block,
-        });
+        engine.load_rules(vec![PolicyRule {
+            name: "alert-outbound".to_string(),
+            description: Some("flag outbound traffic".to_string()),
+            enabled: true,
+            conditions: vec![Condition {
+                field: "direction".to_string(),
+                operator: Operator::Equals,
+                value: "outbound".to_string(),
+            }],
+            action: Action::Alert,
+        }]);
 
-        let mut event = base_event();
-        event.total_tokens = Some(2_000);
-
-        assert!(matches!(
+        let event = make_event();
+        assert_eq!(
             engine.evaluate(&event),
-            PolicyDecision::Block { .. }
-        ));
+            PolicyDecision::Alert {
+                message: "alert from rule: alert-outbound".to_string(),
+            }
+        );
     }
 
+    // 5. GreaterThan condition — cost above threshold → Block
     #[test]
-    fn max_tokens_within_limit_allows() {
+    fn greater_than_cost_blocks() {
+        use rust_decimal::Decimal;
+        use std::str::FromStr;
+
         let mut engine = PolicyEngine::new();
-        engine.add_rule(PolicyRule {
-            name: "token-limit".to_string(),
+        engine.load_rules(vec![PolicyRule {
+            name: "cost-limit".to_string(),
             description: None,
-            condition: PolicyCondition::MaxTokens { limit: 5_000 },
-            action: RuleAction::Block,
-        });
+            enabled: true,
+            conditions: vec![Condition {
+                field: "cost_usd".to_string(),
+                operator: Operator::GreaterThan,
+                value: "1.0".to_string(),
+            }],
+            action: Action::Block,
+        }]);
 
-        let mut event = base_event();
-        event.total_tokens = Some(500);
+        let mut event = make_event();
+        event.cost_usd = Some(Decimal::from_str("2.50").unwrap());
 
+        assert_eq!(
+            engine.evaluate(&event),
+            PolicyDecision::Block {
+                reason: "blocked by rule: cost-limit".to_string(),
+            }
+        );
+
+        // Cost below threshold should allow.
+        event.cost_usd = Some(Decimal::from_str("0.50").unwrap());
         assert_eq!(engine.evaluate(&event), PolicyDecision::Allow);
     }
 
-    // ── 4. Agent blocked ───────────────────────────────────────────────────────
-
+    // 6. YAML loading works
     #[test]
-    fn agent_blocked_returns_block() {
-        let mut engine = PolicyEngine::new();
-        engine.add_rule(PolicyRule {
-            name: "ban-rogue".to_string(),
-            description: None,
-            condition: PolicyCondition::AgentBlocked {
-                agents: vec!["rogue-agent".to_string()],
-            },
-            action: RuleAction::Block,
-        });
-
-        let mut event = base_event();
-        event.agent_id = "rogue-agent".to_string();
-
-        assert!(matches!(
-            engine.evaluate(&event),
-            PolicyDecision::Block { .. }
-        ));
-    }
-
-    // ── 5. Multiple rules — first-match semantics ──────────────────────────────
-
-    #[test]
-    fn first_matching_rule_wins() {
-        let mut engine = PolicyEngine::new();
-
-        // Rule 1: alert on gpt-4
-        engine.add_rule(PolicyRule {
-            name: "alert-gpt4".to_string(),
-            description: None,
-            condition: PolicyCondition::ModelBlocked {
-                models: vec!["gpt-4".to_string()],
-            },
-            action: RuleAction::Alert,
-        });
-
-        // Rule 2: block anything (would fire for same event)
-        engine.add_rule(PolicyRule {
-            name: "block-all".to_string(),
-            description: None,
-            condition: PolicyCondition::ModelBlocked {
-                models: vec!["gpt-4".to_string()],
-            },
-            action: RuleAction::Block,
-        });
-
-        let mut event = base_event();
-        event.model = Some("gpt-4".to_string());
-
-        // Rule 1 fires first → Alert, not Block
-        assert!(matches!(
-            engine.evaluate(&event),
-            PolicyDecision::Alert { .. }
-        ));
-    }
-
-    // ── 6. Load from YAML ──────────────────────────────────────────────────────
-
-    #[test]
-    fn load_from_yaml_and_evaluate() {
+    fn yaml_loading_works() {
         let yaml = r#"
-rules:
-  - name: "block-gpt4"
-    description: "No GPT-4 allowed"
-    condition:
-      type: model_blocked
-      models:
-        - "gpt-4"
-    action: block
-  - name: "token-alert"
-    condition:
-      type: max_tokens
-      limit: 1000
-    action: alert
+- name: block-gpt4
+  enabled: true
+  conditions:
+    - field: model
+      operator: equals
+      value: gpt-4
+  action: block
+- name: alert-anthropic
+  enabled: true
+  conditions:
+    - field: provider
+      operator: equals
+      value: anthropic
+  action: alert
 "#;
-        let mut engine = PolicyEngine::new();
-        engine.load_from_yaml(yaml).expect("yaml parse failed");
-
-        let mut event = base_event();
-        event.model = Some("gpt-4".to_string());
-        assert!(matches!(
-            engine.evaluate(&event),
-            PolicyDecision::Block { .. }
-        ));
-
-        let mut event2 = base_event();
-        event2.total_tokens = Some(5_000);
-        assert!(matches!(
-            engine.evaluate(&event2),
-            PolicyDecision::Alert { .. }
-        ));
+        let rules = PolicyEngine::load_yaml(yaml).expect("YAML parse failed");
+        assert_eq!(rules.len(), 2);
+        assert_eq!(rules[0].name, "block-gpt4");
+        assert!(rules[0].enabled);
+        assert_eq!(rules[0].conditions.len(), 1);
+        assert!(matches!(rules[0].action, Action::Block));
+        assert_eq!(rules[1].name, "alert-anthropic");
+        assert!(matches!(rules[1].action, Action::Alert));
     }
 
-    // ── 7. Max cost exceeded → Alert ──────────────────────────────────────────
-
+    // 7. Disabled rule is skipped
     #[test]
-    fn max_cost_exceeded_alerts() {
+    fn disabled_rule_is_skipped() {
         let mut engine = PolicyEngine::new();
-        engine.add_rule(PolicyRule {
-            name: "cost-guard".to_string(),
+        engine.load_rules(vec![PolicyRule {
+            name: "disabled-block".to_string(),
             description: None,
-            condition: PolicyCondition::MaxCostUsd { limit_usd: 1.0 },
-            action: RuleAction::Alert,
-        });
+            enabled: false,
+            conditions: vec![Condition {
+                field: "provider".to_string(),
+                operator: Operator::Equals,
+                value: "openai".to_string(),
+            }],
+            action: Action::Block,
+        }]);
 
-        let mut event = base_event();
-        event.cost_usd = Some(Decimal::try_from(2.5_f64).unwrap());
+        let event = make_event();
+        assert_eq!(engine.evaluate(&event), PolicyDecision::Allow);
+    }
 
-        assert!(matches!(
+    // 8. YAML-loaded rules evaluate correctly end-to-end
+    #[test]
+    fn yaml_rules_evaluate() {
+        let yaml = r#"
+- name: block-openai
+  enabled: true
+  conditions:
+    - field: provider
+      operator: equals
+      value: openai
+  action: block
+"#;
+        let rules = PolicyEngine::load_yaml(yaml).expect("YAML parse failed");
+        let mut engine = PolicyEngine::new();
+        engine.load_rules(rules);
+
+        let event = make_event(); // provider = OpenAI
+        assert_eq!(
             engine.evaluate(&event),
-            PolicyDecision::Alert { .. }
-        ));
+            PolicyDecision::Block {
+                reason: "blocked by rule: block-openai".to_string(),
+            }
+        );
+    }
+
+    // 9. Regex match condition
+    #[test]
+    fn regex_match_condition() {
+        let mut engine = PolicyEngine::new();
+        engine.load_rules(vec![PolicyRule {
+            name: "gpt-models".to_string(),
+            description: None,
+            enabled: true,
+            conditions: vec![Condition {
+                field: "model".to_string(),
+                operator: Operator::Matches,
+                value: r"^gpt-4.*".to_string(),
+            }],
+            action: Action::Alert,
+        }]);
+
+        let mut event = make_event();
+        event.model = Some("gpt-4o".to_string());
+        assert_eq!(
+            engine.evaluate(&event),
+            PolicyDecision::Alert {
+                message: "alert from rule: gpt-models".to_string(),
+            }
+        );
+
+        event.model = Some("claude-3-5-sonnet-20241022".to_string());
+        assert_eq!(engine.evaluate(&event), PolicyDecision::Allow);
+    }
+
+    // 10. Multiple conditions — all must match (AND semantics)
+    #[test]
+    fn multiple_conditions_and_semantics() {
+        let mut engine = PolicyEngine::new();
+        engine.load_rules(vec![PolicyRule {
+            name: "openai-outbound-block".to_string(),
+            description: None,
+            enabled: true,
+            conditions: vec![
+                Condition {
+                    field: "provider".to_string(),
+                    operator: Operator::Equals,
+                    value: "openai".to_string(),
+                },
+                Condition {
+                    field: "direction".to_string(),
+                    operator: Operator::Equals,
+                    value: "inbound".to_string(), // does NOT match outbound event
+                },
+            ],
+            action: Action::Block,
+        }]);
+
+        // Event is outbound → second condition fails → Allow
+        let event = make_event();
+        assert_eq!(engine.evaluate(&event), PolicyDecision::Allow);
     }
 }
