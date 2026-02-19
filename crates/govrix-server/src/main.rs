@@ -11,7 +11,7 @@
 mod api;
 
 use std::net::SocketAddr;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 use agentmesh_common::config::Config;
 use agentmesh_proxy::{api as scout_api, events, policy::PolicyHook, proxy};
@@ -88,10 +88,12 @@ async fn main() -> anyhow::Result<()> {
     );
 
     // ── Policy engine ────────────────────────────────────────────────────────
-    let policy_engine = PolicyEngine::new();
+    let policy_engine = Arc::new(RwLock::new(PolicyEngine::new()));
     let pii_enabled = license_info.policy_enabled;
-    let policy_hook: Arc<dyn PolicyHook> =
-        Arc::new(GovrixPolicyHook::new(policy_engine, pii_enabled));
+    let policy_hook: Arc<dyn PolicyHook> = Arc::new(GovrixPolicyHook::new(
+        Arc::clone(&policy_engine),
+        pii_enabled,
+    ));
     tracing::info!(pii_enabled, "policy engine initialized");
 
     // ── Proxy server ────────────────────────────────────────────────────────
@@ -124,6 +126,7 @@ async fn main() -> anyhow::Result<()> {
         policy_enabled: license_info.policy_enabled,
         pii_masking_enabled: license_info.pii_masking_enabled,
         version: env!("CARGO_PKG_VERSION"),
+        engine: Arc::clone(&policy_engine),
     });
     let platform_routes = api::platform_router(platform_state);
     let api_handle = tokio::spawn(async move {

@@ -9,7 +9,7 @@ agentmesh-proxy = { workspace = true }
 govrix-common = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-serde_yaml = "0.9"
+serde_yaml = { workspace = true }
 regex = "1"
 thiserror = { workspace = true }
 tracing = { workspace = true }
