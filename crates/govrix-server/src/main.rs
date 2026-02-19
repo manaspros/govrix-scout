@@ -9,10 +9,13 @@
 //! Startup: loads Platform config, validates license, initializes Scout proxy.
 
 use std::net::SocketAddr;
+use std::sync::Arc;
 
 use agentmesh_common::config::Config;
-use agentmesh_proxy::{api, events, proxy};
+use agentmesh_proxy::{api, events, policy::PolicyHook, proxy};
 use govrix_common::license;
+use govrix_policy::engine::PolicyEngine;
+use govrix_policy::hook::GovrixPolicyHook;
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
@@ -82,6 +85,13 @@ async fn main() -> anyhow::Result<()> {
         "event channel initialized"
     );
 
+    // ── Policy engine ────────────────────────────────────────────────────────
+    let policy_engine = PolicyEngine::new();
+    let pii_enabled = license_info.policy_enabled;
+    let policy_hook: Arc<dyn PolicyHook> =
+        Arc::new(GovrixPolicyHook::new(policy_engine, pii_enabled));
+    tracing::info!(pii_enabled, "policy engine initialized");
+
     // ── Proxy server ────────────────────────────────────────────────────────
     let proxy_addr: SocketAddr = format!("{}:{}", config.proxy.bind, config.proxy.port)
         .parse()
@@ -89,8 +99,12 @@ async fn main() -> anyhow::Result<()> {
 
     let proxy_event_sender = event_sender.clone();
     let proxy_metrics = metrics.clone();
+    let proxy_policy = policy_hook.clone();
     let proxy_handle = tokio::spawn(async move {
-        if let Err(e) = proxy::serve(proxy_addr, proxy_event_sender, proxy_metrics).await {
+        if let Err(e) =
+            proxy::serve_with_policy(proxy_addr, proxy_event_sender, proxy_metrics, proxy_policy)
+                .await
+        {
             tracing::error!("proxy server error: {e}");
         }
     });
