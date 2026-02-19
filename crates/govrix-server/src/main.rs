@@ -118,7 +118,14 @@ async fn main() -> anyhow::Result<()> {
 
     let api_config = config.clone();
     let api_metrics = metrics.clone();
-    let platform_routes = api::platform_router();
+    let platform_state = Arc::new(api::PlatformState {
+        license_tier: license_info.tier.clone(),
+        max_agents: license_info.max_agents,
+        policy_enabled: license_info.policy_enabled,
+        pii_masking_enabled: license_info.pii_masking_enabled,
+        version: env!("CARGO_PKG_VERSION"),
+    });
+    let platform_routes = api::platform_router(platform_state);
     let api_handle = tokio::spawn(async move {
         let result = match pool {
             Some(p) => {

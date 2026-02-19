@@ -31,3 +31,5 @@ chrono = { version = "0.4", features = ["serde"] }
 figment = { version = "0.10", features = ["toml", "env"] }
 clap = { version = "4", features = ["derive", "env"] }
 rust_decimal = { version = "1", features = ["serde-float"] }
+base64 = "0.22"
+rcgen = { version = "0.13", features = ["x509-parser"] }
