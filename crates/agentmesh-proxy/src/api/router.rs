@@ -74,8 +74,7 @@ pub fn create_router(state: Arc<AppState>) -> Router {
         .route("/api/v1/agents", get(handlers::agents::list_agents))
         .route(
             "/api/v1/agents/:id",
-            get(handlers::agents::get_agent)
-                .put(handlers::agents::update_agent),
+            get(handlers::agents::get_agent).put(handlers::agents::update_agent),
         )
         .route(
             "/api/v1/agents/:id/retire",
@@ -92,10 +91,7 @@ pub fn create_router(state: Arc<AppState>) -> Router {
             get(handlers::costs::cost_breakdown),
         )
         // ── Reports ────────────────────────────────────────────────────────
-        .route(
-            "/api/v1/reports/types",
-            get(handlers::reports::list_types),
-        )
+        .route("/api/v1/reports/types", get(handlers::reports::list_types))
         .route("/api/v1/reports", get(handlers::reports::list_reports))
         .route(
             "/api/v1/reports/generate",
@@ -175,7 +171,10 @@ pub fn build_router() -> Router {
             get(stub_session_events),
         )
         .route("/api/v1/agents", get(stub_list))
-        .route("/api/v1/agents/:id", get(stub_item).put(stub_not_implemented))
+        .route(
+            "/api/v1/agents/:id",
+            get(stub_item).put(stub_not_implemented),
+        )
         .route("/api/v1/agents/:id/retire", post(stub_not_implemented))
         .route("/api/v1/agents/:id/events", get(stub_list))
         .route("/api/v1/costs/summary", get(stub_cost_summary))

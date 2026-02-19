@@ -277,10 +277,7 @@ pub async fn increment_agent_stats(
 }
 
 /// Record an error for an agent: increment error_count and set last_error_at.
-pub async fn record_agent_error(
-    pool: &StorePool,
-    agent_id: &str,
-) -> Result<(), sqlx::Error> {
+pub async fn record_agent_error(pool: &StorePool, agent_id: &str) -> Result<(), sqlx::Error> {
     sqlx::query(
         r#"
         UPDATE agents
@@ -303,11 +300,9 @@ pub async fn record_agent_error(
 pub async fn active_agent_count(pool: &StorePool) -> Result<i64, sqlx::Error> {
     use sqlx::Row;
 
-    let row = sqlx::query(
-        "SELECT COUNT(*) AS cnt FROM agents WHERE status != 'blocked'",
-    )
-    .fetch_one(pool)
-    .await?;
+    let row = sqlx::query("SELECT COUNT(*) AS cnt FROM agents WHERE status != 'blocked'")
+        .fetch_one(pool)
+        .await?;
 
     Ok(row.try_get::<i64, _>("cnt").unwrap_or(0))
 }
@@ -386,8 +381,8 @@ pub async fn list_agents_simple(
 // ── Private helpers ───────────────────────────────────────────────────────────
 
 fn build_agent_json(r: &sqlx::postgres::PgRow) -> serde_json::Value {
-    use sqlx::Row;
     use chrono::DateTime;
+    use sqlx::Row;
 
     serde_json::json!({
         "id":               r.try_get::<String, _>("id").ok(),

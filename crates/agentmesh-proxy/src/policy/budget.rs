@@ -174,10 +174,7 @@ impl BudgetTracker {
 
     /// Return a snapshot of today's usage for `agent_id` (zero if unseen).
     pub fn current_usage(&self, agent_id: &str) -> DailyUsage {
-        self.daily_usage
-            .get(agent_id)
-            .cloned()
-            .unwrap_or_default()
+        self.daily_usage.get(agent_id).cloned().unwrap_or_default()
     }
 
     /// Return all agent IDs that have usage recorded today.
@@ -405,7 +402,7 @@ mod tests {
         let mut tracker = BudgetTracker::new(policy);
         tracker.record_usage("agent-1", 300, 0.0);
         tracker.record_usage("agent-2", 150, 0.0); // global total: 450
-        // Next request would push global total to 500 + 60 = over limit
+                                                   // Next request would push global total to 500 + 60 = over limit
         let action = tracker.check_budget("agent-3", 60, 0.0);
         assert!(matches!(action, PolicyAction::Block { .. }));
     }

@@ -84,9 +84,8 @@ impl PolicyEngine {
     /// - Non-blocking: callers should `tokio::spawn` this for hot-path safety
     pub fn evaluate(&self, event: &AgentEvent) -> Vec<PolicyDecision> {
         // Catch any internal panic — fail-open
-        match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            self.evaluate_inner(event)
-        })) {
+        match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| self.evaluate_inner(event)))
+        {
             Ok(decisions) => decisions,
             Err(_) => {
                 tracing::warn!(
@@ -139,12 +138,13 @@ impl PolicyEngine {
             }
 
             // Dispatch to per-policy evaluator based on ID prefix or rule content
-            let is_pii = entry.id.contains("pii")
-                || entry.rules.iter().any(|r| !r.scan_for.is_empty());
+            let is_pii =
+                entry.id.contains("pii") || entry.rules.iter().any(|r| !r.scan_for.is_empty());
             let is_budget = entry.id.contains("budget")
-                || entry.rules.iter().any(|r| {
-                    r.daily_token_limit.is_some() || r.daily_cost_limit_usd.is_some()
-                });
+                || entry
+                    .rules
+                    .iter()
+                    .any(|r| r.daily_token_limit.is_some() || r.daily_cost_limit_usd.is_some());
 
             if is_pii {
                 let mut pii_decisions = self.evaluate_pii_policy(entry, event);

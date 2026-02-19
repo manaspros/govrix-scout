@@ -105,8 +105,12 @@ pub async fn get_cost_summary(
         total_input_tokens: row.try_get::<i64, _>("total_input_tokens").unwrap_or(0),
         total_output_tokens: row.try_get::<i64, _>("total_output_tokens").unwrap_or(0),
         total_cost_usd: row.try_get::<f64, _>("total_cost_usd").unwrap_or(0.0),
-        avg_latency_ms: row.try_get::<Option<f64>, _>("avg_latency_ms").unwrap_or(None),
-        p99_latency_ms: row.try_get::<Option<f64>, _>("p99_latency_ms").unwrap_or(None),
+        avg_latency_ms: row
+            .try_get::<Option<f64>, _>("avg_latency_ms")
+            .unwrap_or(None),
+        p99_latency_ms: row
+            .try_get::<Option<f64>, _>("p99_latency_ms")
+            .unwrap_or(None),
     })
 }
 
@@ -161,7 +165,9 @@ pub async fn get_cost_breakdown(
             total_input_tokens: row.try_get::<i64, _>("total_input_tokens").unwrap_or(0),
             total_output_tokens: row.try_get::<i64, _>("total_output_tokens").unwrap_or(0),
             total_cost_usd: row.try_get::<f64, _>("total_cost_usd").unwrap_or(0.0),
-            avg_latency_ms: row.try_get::<Option<f64>, _>("avg_latency_ms").unwrap_or(None),
+            avg_latency_ms: row
+                .try_get::<Option<f64>, _>("avg_latency_ms")
+                .unwrap_or(None),
         })
         .collect();
 
@@ -218,16 +224,24 @@ pub async fn get_cost_timeseries(
     use sqlx::Row;
 
     let rows = if let Some(aid) = agent_id {
-        sqlx::query(&sql).bind(from).bind(to).bind(aid).fetch_all(pool).await?
+        sqlx::query(&sql)
+            .bind(from)
+            .bind(to)
+            .bind(aid)
+            .fetch_all(pool)
+            .await?
     } else {
-        sqlx::query(&sql).bind(from).bind(to).fetch_all(pool).await?
+        sqlx::query(&sql)
+            .bind(from)
+            .bind(to)
+            .fetch_all(pool)
+            .await?
     };
 
     let result = rows
         .into_iter()
         .map(|row| {
-            let bucket: Option<DateTime<Utc>> =
-                row.try_get::<DateTime<Utc>, _>("bucket").ok();
+            let bucket: Option<DateTime<Utc>> = row.try_get::<DateTime<Utc>, _>("bucket").ok();
             let request_count: i64 = row.try_get("request_count").unwrap_or(0);
             let total_cost_usd: f64 = row.try_get("total_cost_usd").unwrap_or(0.0);
             let total_tokens: i64 = row.try_get("total_tokens").unwrap_or(0);

@@ -75,7 +75,12 @@ async fn main() -> anyhow::Result<()> {
 
     // Spawn background event writer (clone pool so API server can still use the original)
     let writer_pool = pool.clone();
-    tokio::spawn(events::run_background_writer(event_rx, event_metrics, writer_pool, metrics.clone()));
+    tokio::spawn(events::run_background_writer(
+        event_rx,
+        event_metrics,
+        writer_pool,
+        metrics.clone(),
+    ));
     tracing::info!(
         capacity = events::EVENT_CHANNEL_CAPACITY,
         "event channel initialized"

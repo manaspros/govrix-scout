@@ -212,12 +212,16 @@ async fn forward_streaming(
 /// For SSE responses, returns all `data:` lines concatenated for analysis.
 fn build_accumulated_stream_body(protocol: &Protocol, raw_bytes: &Bytes) -> Bytes {
     match protocol {
-        Protocol::OpenAI { streaming: true, .. } => {
+        Protocol::OpenAI {
+            streaming: true, ..
+        } => {
             // The interceptor's parse_response path handles both streaming and buffered
             // For streaming, pass the raw SSE bytes — parse_streaming_chunks is called there
             raw_bytes.clone()
         }
-        Protocol::Anthropic { streaming: true, .. } => {
+        Protocol::Anthropic {
+            streaming: true, ..
+        } => {
             // Pass raw SSE bytes — process_anthropic_chunk is called in log_response_event
             raw_bytes.clone()
         }
@@ -303,9 +307,7 @@ fn is_streaming_hint_from_headers(headers: &http::HeaderMap) -> bool {
         .unwrap_or(false)
 }
 
-fn detect_mcp_transport(
-    headers: &http::HeaderMap,
-) -> agentmesh_common::protocols::McpTransport {
+fn detect_mcp_transport(headers: &http::HeaderMap) -> agentmesh_common::protocols::McpTransport {
     if headers
         .get("accept")
         .and_then(|v| v.to_str().ok())
@@ -321,7 +323,6 @@ fn detect_mcp_transport(
 fn is_a2a_request(headers: &http::HeaderMap) -> bool {
     headers.contains_key("x-a2a-protocol-version")
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -371,7 +372,13 @@ mod tests {
         };
         let body = Bytes::from(br#"{"model":"gpt-4o","stream":true,"messages":[]}"#.to_vec());
         let refined = refine_streaming_from_body(proto, &body);
-        assert!(matches!(refined, Protocol::OpenAI { streaming: true, .. }));
+        assert!(matches!(
+            refined,
+            Protocol::OpenAI {
+                streaming: true,
+                ..
+            }
+        ));
     }
 
     #[test]
@@ -382,18 +389,33 @@ mod tests {
         };
         let body = Bytes::from(br#"{"model":"gpt-4o","messages":[]}"#.to_vec());
         let refined = refine_streaming_from_body(proto, &body);
-        assert!(matches!(refined, Protocol::OpenAI { streaming: false, .. }));
+        assert!(matches!(
+            refined,
+            Protocol::OpenAI {
+                streaming: false,
+                ..
+            }
+        ));
     }
 
     #[test]
     fn extract_api_version_from_path() {
-        assert_eq!(extract_api_version("/proxy/openai/v1/chat/completions", "openai"), "v1");
-        assert_eq!(extract_api_version("/proxy/openai/v2/chat/completions", "openai"), "v2");
+        assert_eq!(
+            extract_api_version("/proxy/openai/v1/chat/completions", "openai"),
+            "v1"
+        );
+        assert_eq!(
+            extract_api_version("/proxy/openai/v2/chat/completions", "openai"),
+            "v2"
+        );
     }
 
     #[test]
     fn extract_mcp_server_from_path() {
-        assert_eq!(extract_mcp_server("/proxy/mcp/filesystem/tools/call"), "filesystem");
+        assert_eq!(
+            extract_mcp_server("/proxy/mcp/filesystem/tools/call"),
+            "filesystem"
+        );
         assert_eq!(extract_mcp_server("/proxy/mcp/postgres/query"), "postgres");
     }
 }

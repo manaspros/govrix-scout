@@ -166,11 +166,7 @@ pub fn extract_tool_calls(response: &serde_json::Value) -> Vec<String> {
 
     choices
         .iter()
-        .filter_map(|choice| {
-            choice
-                .get("message")
-                .or_else(|| choice.get("delta"))
-        })
+        .filter_map(|choice| choice.get("message").or_else(|| choice.get("delta")))
         .filter_map(|msg| msg.get("tool_calls"))
         .filter_map(|tcs| tcs.as_array())
         .flatten()
@@ -223,7 +219,10 @@ pub fn parse_streaming_chunks(chunks: &[String]) -> StreamingAccumulation {
 
                 // Accumulate tool call names from delta
                 let msg = choice.get("delta").or_else(|| choice.get("message"));
-                if let Some(tool_calls) = msg.and_then(|m| m.get("tool_calls")).and_then(|t| t.as_array()) {
+                if let Some(tool_calls) = msg
+                    .and_then(|m| m.get("tool_calls"))
+                    .and_then(|t| t.as_array())
+                {
                     for tc in tool_calls {
                         if let Some(name) = tc
                             .get("function")

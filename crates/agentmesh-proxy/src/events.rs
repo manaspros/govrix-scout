@@ -206,7 +206,9 @@ async fn flush_batch(
                 Ok(count) => {
                     tracing::debug!(count, "flushed event batch to PostgreSQL");
                     // Increment events_total by the number of successfully inserted events.
-                    metrics.events_total.fetch_add(count as u64, Ordering::Relaxed);
+                    metrics
+                        .events_total
+                        .fetch_add(count as u64, Ordering::Relaxed);
                 }
                 Err(e) => {
                     tracing::warn!(
@@ -222,7 +224,10 @@ async fn flush_batch(
             upsert_agents_from_batch(p, batch, metrics, seen_agents).await;
         }
         None => {
-            tracing::debug!(count = batch.len(), "flushing event batch (no DB pool — events discarded)");
+            tracing::debug!(
+                count = batch.len(),
+                "flushing event batch (no DB pool — events discarded)"
+            );
         }
     }
 
@@ -294,7 +299,9 @@ async fn upsert_agents_from_batch(
             seen_agents.insert((*agent_id).to_string());
         }
         // Update agents_active with the total count of unique agents seen in-process.
-        metrics.agents_active.store(seen_agents.len() as u64, Ordering::Relaxed);
+        metrics
+            .agents_active
+            .store(seen_agents.len() as u64, Ordering::Relaxed);
 
         tracing::debug!(
             unique_agents = agents.len(),

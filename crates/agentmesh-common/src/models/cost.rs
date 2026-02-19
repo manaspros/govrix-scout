@@ -104,12 +104,10 @@ pub struct ModelPricing {
 impl ModelPricing {
     /// Estimate the cost for the given token counts.
     pub fn estimate_cost(&self, input_tokens: i32, output_tokens: i32) -> Decimal {
-        let input_cost = self.input_usd_per_1m
-            * Decimal::from(input_tokens)
-            / Decimal::from(1_000_000i64);
-        let output_cost = self.output_usd_per_1m
-            * Decimal::from(output_tokens)
-            / Decimal::from(1_000_000i64);
+        let input_cost =
+            self.input_usd_per_1m * Decimal::from(input_tokens) / Decimal::from(1_000_000i64);
+        let output_cost =
+            self.output_usd_per_1m * Decimal::from(output_tokens) / Decimal::from(1_000_000i64);
         input_cost + output_cost
     }
 }

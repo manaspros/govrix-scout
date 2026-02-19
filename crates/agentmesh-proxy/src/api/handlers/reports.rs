@@ -94,7 +94,12 @@ pub async fn list_reports() -> impl IntoResponse {
 /// POST /api/v1/reports/generate
 pub async fn generate_report(Json(body): Json<GenerateReportRequest>) -> impl IntoResponse {
     // Validate report type
-    let valid_types = ["usage_summary", "cost_breakdown", "agent_inventory", "activity_log"];
+    let valid_types = [
+        "usage_summary",
+        "cost_breakdown",
+        "agent_inventory",
+        "activity_log",
+    ];
     if !valid_types.contains(&body.report_type.as_str()) {
         return (
             StatusCode::BAD_REQUEST,
@@ -129,7 +134,12 @@ mod tests {
 
     #[test]
     fn valid_report_types() {
-        let valid_types = ["usage_summary", "cost_breakdown", "agent_inventory", "activity_log"];
+        let valid_types = [
+            "usage_summary",
+            "cost_breakdown",
+            "agent_inventory",
+            "activity_log",
+        ];
         assert!(valid_types.contains(&"usage_summary"));
         assert!(valid_types.contains(&"cost_breakdown"));
         assert!(!valid_types.contains(&"invalid_type"));

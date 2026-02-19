@@ -19,7 +19,11 @@ impl ApiClient {
 
     pub async fn get(&self, path: &str) -> Result<Value> {
         let url = format!("{}{}", self.base_url, path);
-        let resp = self.client.get(&url).send().await
+        let resp = self
+            .client
+            .get(&url)
+            .send()
+            .await
             .with_context(|| format!("failed to connect to {url}"))?;
         let status = resp.status();
         let body = resp.text().await?;
@@ -31,7 +35,11 @@ impl ApiClient {
 
     pub async fn post(&self, path: &str) -> Result<Value> {
         let url = format!("{}{}", self.base_url, path);
-        let resp = self.client.post(&url).send().await
+        let resp = self
+            .client
+            .post(&url)
+            .send()
+            .await
             .with_context(|| format!("failed to connect to {url}"))?;
         let status = resp.status();
         let body = resp.text().await?;
@@ -43,7 +51,12 @@ impl ApiClient {
 
     pub async fn put_json(&self, path: &str, body: &Value) -> Result<Value> {
         let url = format!("{}{}", self.base_url, path);
-        let resp = self.client.put(&url).json(body).send().await
+        let resp = self
+            .client
+            .put(&url)
+            .json(body)
+            .send()
+            .await
             .with_context(|| format!("failed to connect to {url}"))?;
         let status = resp.status();
         let text = resp.text().await?;

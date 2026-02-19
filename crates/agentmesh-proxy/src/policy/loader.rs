@@ -102,13 +102,11 @@ pub fn load_from_file(path: &Path) -> anyhow::Result<PolicyConfig> {
         return Ok(PolicyConfig::default());
     }
 
-    let content = std::fs::read_to_string(path).map_err(|e| {
-        anyhow::anyhow!("failed to read policy file {}: {}", path.display(), e)
-    })?;
+    let content = std::fs::read_to_string(path)
+        .map_err(|e| anyhow::anyhow!("failed to read policy file {}: {}", path.display(), e))?;
 
-    let config: PolicyConfig = serde_yaml::from_str(&content).map_err(|e| {
-        anyhow::anyhow!("failed to parse policy file {}: {}", path.display(), e)
-    })?;
+    let config: PolicyConfig = serde_yaml::from_str(&content)
+        .map_err(|e| anyhow::anyhow!("failed to parse policy file {}: {}", path.display(), e))?;
 
     tracing::info!(
         path = %path.display(),
@@ -153,10 +151,7 @@ pub fn extract_budget_policy(config: &PolicyConfig) -> BudgetPolicy {
         }
 
         for rule in &entry.rules {
-            let agent_class = rule
-                .agent_class
-                .as_deref()
-                .unwrap_or("*");
+            let agent_class = rule.agent_class.as_deref().unwrap_or("*");
 
             if agent_class == "*" {
                 // Global limit
@@ -291,7 +286,10 @@ policies:
 "#;
         let config = load_from_str(yaml).unwrap();
         let budget = extract_budget_policy(&config);
-        let agent = budget.agent_limits.get("agent-007").expect("agent-007 present");
+        let agent = budget
+            .agent_limits
+            .get("agent-007")
+            .expect("agent-007 present");
         assert_eq!(agent.daily_cost_limit_usd, Some(50.0));
         assert_eq!(agent.daily_token_limit, Some(500_000));
     }

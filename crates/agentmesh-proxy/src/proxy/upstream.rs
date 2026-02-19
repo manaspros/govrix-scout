@@ -191,8 +191,8 @@ fn resolve_upstream_base(protocol: &Protocol) -> &'static str {
         Protocol::OpenAI { .. } => "https://api.openai.com",
         Protocol::Anthropic { .. } => "https://api.anthropic.com",
         Protocol::Mcp { .. } => "http://localhost:3001", // local MCP server stub
-        Protocol::A2A => "http://localhost:3002",         // local A2A stub
-        Protocol::Unknown => "http://localhost:8080",     // passthrough stub
+        Protocol::A2A => "http://localhost:3002",        // local A2A stub
+        Protocol::Unknown => "http://localhost:8080",    // passthrough stub
     }
 }
 

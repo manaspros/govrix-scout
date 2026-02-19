@@ -102,7 +102,10 @@ pub struct SseAccumulator {
     #[allow(dead_code)]
     pub data_lines: Vec<String>,
     /// All raw Anthropic SSE events collected so far.
-    pub anthropic_events: Vec<(agentmesh_common::protocols::anthropic::AnthropicSseEvent, Option<serde_json::Value>)>,
+    pub anthropic_events: Vec<(
+        agentmesh_common::protocols::anthropic::AnthropicSseEvent,
+        Option<serde_json::Value>,
+    )>,
     /// Whether the stream has ended.
     pub is_done: bool,
 }
@@ -184,7 +187,8 @@ mod tests {
         let chunk_done = b"event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n";
         assert!(is_anthropic_stream_done(chunk_done));
 
-        let chunk_not_done = b"event: content_block_delta\ndata: {\"type\":\"content_block_delta\"}\n\n";
+        let chunk_not_done =
+            b"event: content_block_delta\ndata: {\"type\":\"content_block_delta\"}\n\n";
         assert!(!is_anthropic_stream_done(chunk_not_done));
     }
 

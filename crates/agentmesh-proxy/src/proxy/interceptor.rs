@@ -15,8 +15,8 @@
 
 use bytes::Bytes;
 use chrono::Utc;
-use std::sync::Arc;
 use std::sync::atomic::Ordering;
+use std::sync::Arc;
 use tokio::sync::Mutex;
 
 use agentmesh_common::models::event::{AgentEvent, EventDirection, Provider};
@@ -65,10 +65,7 @@ pub struct RequestContext {
 ///
 /// This is the "outbound" side of the event — logged when a request is
 /// intercepted and forwarded upstream.
-pub async fn log_request_event(
-    ctx: &RequestContext,
-    state: &InterceptorState,
-) {
+pub async fn log_request_event(ctx: &RequestContext, state: &InterceptorState) {
     // Assign session_id and compute lineage hash
     let event_id = uuid::Uuid::now_v7();
     let (session_id, prev_hash) = {
@@ -77,8 +74,7 @@ pub async fn log_request_event(
     };
 
     let timestamp_ms = ctx.request_time.timestamp_millis();
-    let lineage_hash =
-        compute_lineage_hash(&prev_hash, &event_id, &ctx.agent_id, timestamp_ms);
+    let lineage_hash = compute_lineage_hash(&prev_hash, &event_id, &ctx.agent_id, timestamp_ms);
 
     // Build the compliance event
     let provider = protocol_to_provider(&ctx.protocol);
@@ -99,8 +95,7 @@ pub async fn log_request_event(
     // Parse request-specific fields
     match &ctx.protocol {
         Protocol::OpenAI { .. } => {
-            if let Some(req) =
-                agentmesh_common::protocols::openai::parse_request(&ctx.request_body)
+            if let Some(req) = agentmesh_common::protocols::openai::parse_request(&ctx.request_body)
             {
                 event.model = Some(req.model);
                 // Count tools defined in the request
@@ -121,9 +116,7 @@ pub async fn log_request_event(
             }
         }
         Protocol::Mcp { server, .. } => {
-            if let Some(req) =
-                agentmesh_common::protocols::mcp::parse_request(&ctx.request_body)
-            {
+            if let Some(req) = agentmesh_common::protocols::mcp::parse_request(&ctx.request_body) {
                 let tool = agentmesh_common::protocols::mcp::extract_tool_name(&req);
                 event.tags = serde_json::json!({
                     "mcp_server": server,
@@ -167,8 +160,7 @@ pub async fn log_response_event(
     };
 
     let timestamp_ms = Utc::now().timestamp_millis();
-    let lineage_hash =
-        compute_lineage_hash(&prev_hash, &event_id, &ctx.agent_id, timestamp_ms);
+    let lineage_hash = compute_lineage_hash(&prev_hash, &event_id, &ctx.agent_id, timestamp_ms);
 
     let provider = protocol_to_provider(&ctx.protocol);
     let mut event = AgentEvent::new(
@@ -222,9 +214,10 @@ pub async fn log_response_event(
                 // For streaming, response_body contains accumulated SSE bytes
                 let mut acc_state = SseAccumulator::new();
                 acc_state.process_anthropic_chunk(response_body);
-                let streaming_acc = agentmesh_common::protocols::anthropic::accumulate_streaming_events(
-                    &acc_state.anthropic_events,
-                );
+                let streaming_acc =
+                    agentmesh_common::protocols::anthropic::accumulate_streaming_events(
+                        &acc_state.anthropic_events,
+                    );
                 event.model = streaming_acc.model.clone().or_else(|| {
                     agentmesh_common::protocols::anthropic::parse_model(&ctx.request_body)
                 });

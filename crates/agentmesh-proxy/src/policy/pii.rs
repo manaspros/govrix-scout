@@ -183,12 +183,13 @@ impl PiiDetector {
 
         for pattern in &self.patterns {
             // Find if any regex match passes the optional post-match validator
-            let found = pattern.regex.find_iter(text).any(|m| {
-                match pattern.validator {
+            let found = pattern
+                .regex
+                .find_iter(text)
+                .any(|m| match pattern.validator {
                     Some(validate) => validate(m.as_str()),
                     None => true,
-                }
-            });
+                });
 
             if found {
                 matches.push(PiiMatch {
@@ -225,7 +226,11 @@ impl PiiDetector {
     ) {
         match value {
             serde_json::Value::String(s) => {
-                let location = if path.is_empty() { "root".to_string() } else { path.to_string() };
+                let location = if path.is_empty() {
+                    "root".to_string()
+                } else {
+                    path.to_string()
+                };
                 let found = self.scan_text_with_path(s, &location);
                 matches.extend(found);
             }

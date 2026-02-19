@@ -49,10 +49,10 @@ impl EventFilter {
 pub async fn insert_event(pool: &StorePool, event: &AgentEvent) -> Result<(), sqlx::Error> {
     let direction = event.direction.to_string();
     let provider = event.provider.to_string();
-    let pii_json = serde_json::to_value(&event.pii_detected)
-        .unwrap_or(serde_json::Value::Array(vec![]));
-    let tools_json = serde_json::to_value(&event.tools_called)
-        .unwrap_or(serde_json::Value::Array(vec![]));
+    let pii_json =
+        serde_json::to_value(&event.pii_detected).unwrap_or(serde_json::Value::Array(vec![]));
+    let tools_json =
+        serde_json::to_value(&event.tools_called).unwrap_or(serde_json::Value::Array(vec![]));
 
     sqlx::query(
         r#"
@@ -122,10 +122,10 @@ pub async fn insert_events_batch(
     for event in events {
         let direction = event.direction.to_string();
         let provider = event.provider.to_string();
-        let pii_json = serde_json::to_value(&event.pii_detected)
-            .unwrap_or(serde_json::Value::Array(vec![]));
-        let tools_json = serde_json::to_value(&event.tools_called)
-            .unwrap_or(serde_json::Value::Array(vec![]));
+        let pii_json =
+            serde_json::to_value(&event.pii_detected).unwrap_or(serde_json::Value::Array(vec![]));
+        let tools_json =
+            serde_json::to_value(&event.tools_called).unwrap_or(serde_json::Value::Array(vec![]));
 
         sqlx::query(
             r#"

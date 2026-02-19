@@ -3,8 +3,8 @@
 //! For development: allows all origins with common headers.
 //! In production, origins should be restricted via the config `api.cors_origins`.
 
-use tower_http::cors::{Any, CorsLayer};
 use http::Method;
+use tower_http::cors::{Any, CorsLayer};
 
 /// Build a permissive CORS layer suitable for development.
 ///
@@ -36,13 +36,10 @@ pub fn restricted_cors(origins: &[String]) -> CorsLayer {
         return permissive_cors();
     }
 
-    use tower_http::cors::AllowOrigin;
     use http::HeaderValue;
+    use tower_http::cors::AllowOrigin;
 
-    let allowed: Vec<HeaderValue> = origins
-        .iter()
-        .filter_map(|o| o.parse().ok())
-        .collect();
+    let allowed: Vec<HeaderValue> = origins.iter().filter_map(|o| o.parse().ok()).collect();
 
     if allowed.is_empty() {
         return permissive_cors();

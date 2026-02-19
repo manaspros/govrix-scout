@@ -61,11 +61,7 @@ pub fn extract_tool_name(req: &McpRequest) -> Option<String> {
     if req.method != methods::TOOLS_CALL {
         return None;
     }
-    req.params
-        .as_ref()?
-        .get("name")?
-        .as_str()
-        .map(String::from)
+    req.params.as_ref()?.get("name")?.as_str().map(String::from)
 }
 
 /// Check if this is a tool call method.

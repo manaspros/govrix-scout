@@ -46,8 +46,7 @@ pub async fn oldest_event_timestamp(
         .fetch_one(pool)
         .await?;
 
-    let ts: Option<chrono::DateTime<chrono::Utc>> =
-        row.try_get("oldest").unwrap_or(None);
+    let ts: Option<chrono::DateTime<chrono::Utc>> = row.try_get("oldest").unwrap_or(None);
     Ok(ts)
 }
 

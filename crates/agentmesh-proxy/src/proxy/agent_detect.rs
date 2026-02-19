@@ -51,9 +51,7 @@ pub fn resolve_agent_id(headers: &http::HeaderMap, peer_addr: SocketAddr) -> Str
 /// Returns the last 8 characters of the bearer token as a hint.
 /// NEVER returns the full API key.
 fn extract_api_key_hint(headers: &http::HeaderMap) -> Option<String> {
-    let auth = headers
-        .get("authorization")
-        .and_then(|v| v.to_str().ok())?;
+    let auth = headers.get("authorization").and_then(|v| v.to_str().ok())?;
 
     let token = auth.strip_prefix("Bearer ").unwrap_or(auth);
     if token.len() >= 8 {
@@ -94,18 +92,12 @@ mod tests {
     #[test]
     fn falls_back_to_ip() {
         let headers = http::HeaderMap::new();
-        assert_eq!(
-            resolve_agent_id(&headers, make_addr()),
-            "ip:10.0.0.1"
-        );
+        assert_eq!(resolve_agent_id(&headers, make_addr()), "ip:10.0.0.1");
     }
 
     #[test]
     fn falls_back_to_unknown_on_localhost() {
         let headers = http::HeaderMap::new();
-        assert_eq!(
-            resolve_agent_id(&headers, make_localhost()),
-            "unknown"
-        );
+        assert_eq!(resolve_agent_id(&headers, make_localhost()), "unknown");
     }
 }

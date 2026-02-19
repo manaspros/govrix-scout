@@ -198,7 +198,11 @@ impl Config {
         let path = path.as_ref();
         if path.exists() {
             Self::load(path).unwrap_or_else(|e| {
-                tracing::warn!("failed to load config from {}: {}, using defaults", path.display(), e);
+                tracing::warn!(
+                    "failed to load config from {}: {}, using defaults",
+                    path.display(),
+                    e
+                );
                 Self::default()
             })
         } else {

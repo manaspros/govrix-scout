@@ -26,7 +26,11 @@ use clap::{Parser, Subcommand};
 )]
 struct Cli {
     /// AgentMesh API base URL
-    #[arg(long, env = "AGENTMESH_API_URL", default_value = "http://localhost:4001")]
+    #[arg(
+        long,
+        env = "AGENTMESH_API_URL",
+        default_value = "http://localhost:4001"
+    )]
     api_url: String,
 
     /// Output format
@@ -140,10 +144,10 @@ async fn main() -> Result<()> {
             client.post(&format!("/api/v1/agents/{id}/retire")).await
         }
         Commands::Events(EventsCommands::List { limit, agent }) => {
-            let agent_filter = agent
-                .map(|a| format!("&agent_id={a}"))
-                .unwrap_or_default();
-            client.get(&format!("/api/v1/events?limit={limit}{agent_filter}")).await
+            let agent_filter = agent.map(|a| format!("&agent_id={a}")).unwrap_or_default();
+            client
+                .get(&format!("/api/v1/events?limit={limit}{agent_filter}"))
+                .await
         }
         Commands::Events(EventsCommands::Get { id }) => {
             client.get(&format!("/api/v1/events/{id}")).await
@@ -155,11 +159,11 @@ async fn main() -> Result<()> {
             client.get(&format!("/api/v1/events/sessions/{id}")).await
         }
         Commands::Costs { days } => {
-            client.get(&format!("/api/v1/costs/summary?days={days}")).await
+            client
+                .get(&format!("/api/v1/costs/summary?days={days}"))
+                .await
         }
-        Commands::Config(ConfigCommands::Get) => {
-            client.get("/api/v1/config").await
-        }
+        Commands::Config(ConfigCommands::Get) => client.get("/api/v1/config").await,
         Commands::Config(ConfigCommands::Set { key, value }) => {
             let body = serde_json::json!({"key": key, "value": value});
             client.put_json("/api/v1/config", &body).await
