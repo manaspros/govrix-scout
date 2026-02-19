@@ -5,8 +5,11 @@
 use std::sync::{Arc, RwLock};
 
 use axum::{
-    extract::State,
-    http::StatusCode,
+    body::Body,
+    extract::{Request, State},
+    http::{header, StatusCode},
+    middleware::{self, Next},
+    response::{IntoResponse, Response},
     routing::{get, post},
     Json, Router,
 };
@@ -222,6 +225,60 @@ async fn issue_cert(
     }))
 }
 
+/// Bearer token auth middleware for platform routes.
+///
+/// If `AGENTMESH_API_KEY` is set, all requests must include
+/// `Authorization: Bearer <token>`.  If the variable is unset (dev mode),
+/// all requests are allowed through.
+async fn require_api_key(req: Request<Body>, next: Next) -> Response {
+    let expected = std::env::var("AGENTMESH_API_KEY").unwrap_or_default();
+    if expected.is_empty() {
+        // No key configured — open access (dev mode).
+        return next.run(req).await;
+    }
+
+    let auth_header = req.headers().get(header::AUTHORIZATION);
+    match auth_header {
+        Some(value) => {
+            let header_str = match value.to_str() {
+                Ok(s) => s,
+                Err(_) => {
+                    return (
+                        StatusCode::UNAUTHORIZED,
+                        Json(serde_json::json!({ "error": "invalid authorization header encoding" })),
+                    )
+                        .into_response();
+                }
+            };
+            if let Some(token) = header_str.strip_prefix("Bearer ") {
+                if token == expected.as_str() {
+                    next.run(req).await
+                } else {
+                    (
+                        StatusCode::UNAUTHORIZED,
+                        Json(serde_json::json!({ "error": "invalid API key" })),
+                    )
+                        .into_response()
+                }
+            } else {
+                (
+                    StatusCode::UNAUTHORIZED,
+                    Json(serde_json::json!({ "error": "authorization header must use Bearer scheme" })),
+                )
+                    .into_response()
+            }
+        }
+        None => (
+            StatusCode::UNAUTHORIZED,
+            Json(serde_json::json!({
+                "error": "missing Authorization header",
+                "hint": "use Authorization: Bearer <AGENTMESH_API_KEY>",
+            })),
+        )
+            .into_response(),
+    }
+}
+
 pub fn platform_router(state: Arc<PlatformState>) -> Router {
     Router::new()
         .route("/api/v1/platform/health", get(platform_health))
@@ -230,6 +287,7 @@ pub fn platform_router(state: Arc<PlatformState>) -> Router {
         .route("/api/v1/policies/reload", post(reload_policies))
         .route("/api/v1/tenants", get(list_tenants).post(create_tenant))
         .route("/api/v1/certs/issue", post(issue_cert))
+        .layer(middleware::from_fn(require_api_key))
         .with_state(state)
 }
 
