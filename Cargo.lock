@@ -5,7 +5,7 @@ version = 4
 [[package]]
 name = "agentmesh-common"
 version = "0.1.0"
-source = "git+ssh://git@github.com/manaspros/govrix-scout.git?branch=main#d6ce505b30fec86e5616f0ee265d9427cdf82f45"
+source = "git+ssh://git@github.com/manaspros/govrix-scout.git?branch=main#3cd3a4bb583cbf28ee2401ea16b9cbe10c42112f"
 dependencies = [
  "anyhow",
  "chrono",
@@ -22,7 +22,7 @@ dependencies = [
 [[package]]
 name = "agentmesh-proxy"
 version = "0.1.0"
-source = "git+ssh://git@github.com/manaspros/govrix-scout.git?branch=main#d6ce505b30fec86e5616f0ee265d9427cdf82f45"
+source = "git+ssh://git@github.com/manaspros/govrix-scout.git?branch=main#3cd3a4bb583cbf28ee2401ea16b9cbe10c42112f"
 dependencies = [
  "agentmesh-common",
  "agentmesh-store",
@@ -54,7 +54,7 @@ dependencies = [
 [[package]]
 name = "agentmesh-store"
 version = "0.1.0"
-source = "git+ssh://git@github.com/manaspros/govrix-scout.git?branch=main#d6ce505b30fec86e5616f0ee265d9427cdf82f45"
+source = "git+ssh://git@github.com/manaspros/govrix-scout.git?branch=main#3cd3a4bb583cbf28ee2401ea16b9cbe10c42112f"
 dependencies = [
  "agentmesh-common",
  "chrono",

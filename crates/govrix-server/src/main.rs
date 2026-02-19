@@ -118,9 +118,19 @@ async fn main() -> anyhow::Result<()> {
 
     let api_config = config.clone();
     let api_metrics = metrics.clone();
+    let platform_routes = api::platform_router();
     let api_handle = tokio::spawn(async move {
         let result = match pool {
-            Some(p) => scout_api::serve_with_pool(api_addr, p, api_config, api_metrics).await,
+            Some(p) => {
+                scout_api::serve_with_pool_and_routes(
+                    api_addr,
+                    p,
+                    api_config,
+                    api_metrics,
+                    Some(platform_routes),
+                )
+                .await
+            }
             None => scout_api::serve(api_addr).await,
         };
         if let Err(e) = result {

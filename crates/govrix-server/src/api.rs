@@ -2,8 +2,6 @@
 //!
 //! Extends Scout's management API with policy and tenant management routes.
 
-#![allow(dead_code)]
-
 use axum::{routing::get, Json, Router};
 use serde::Serialize;
 
