@@ -1,0 +1,30 @@
+# Example policy configuration for Govrix PolicyEngine.
+#
+# Copy this file to policies.yaml and adjust rules to match your environment.
+# Load it at startup with PolicyEngine::load_rules_from_file().
+#
+# Supported fields: model, agent_id, provider, direction, cost_usd,
+#                   input_tokens, output_tokens
+#
+# Supported operators: equals, not_equals, contains, greater_than, less_than,
+#                      matches  (matches treats `value` as a regex)
+#
+# Supported actions: allow, block, alert
+
+- name: block-unauthorized-models
+  description: Block access to non-approved AI models
+  enabled: true
+  conditions:
+    - field: provider
+      operator: not_equals
+      value: openai
+  action: block
+
+- name: alert-outbound-requests
+  description: Alert on all outbound agent requests
+  enabled: true
+  conditions:
+    - field: direction
+      operator: equals
+      value: outbound
+  action: alert

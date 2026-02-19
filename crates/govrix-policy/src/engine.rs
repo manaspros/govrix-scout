@@ -77,6 +77,25 @@ impl PolicyEngine {
         self.rules = rules;
     }
 
+    /// Reload the rule set, replacing any previously loaded rules.
+    ///
+    /// This is equivalent to [`load_rules`] but signals intent — callers use
+    /// this when dynamically replacing rules at runtime rather than doing
+    /// initial configuration.
+    pub fn reload_rules(&mut self, rules: Vec<PolicyRule>) {
+        self.load_rules(rules);
+    }
+
+    /// Return `(total_rules, enabled_rules)`.
+    ///
+    /// `total_rules` is the number of rules currently loaded (enabled or not).
+    /// `enabled_rules` is the subset where `enabled == true`.
+    pub fn rule_count(&self) -> (usize, usize) {
+        let total = self.rules.len();
+        let enabled = self.rules.iter().filter(|r| r.enabled).count();
+        (total, enabled)
+    }
+
     /// Parse a YAML list of rules.
     ///
     /// Expected format (top-level sequence):
@@ -91,6 +110,31 @@ impl PolicyEngine {
     /// ```
     pub fn load_yaml(yaml_str: &str) -> Result<Vec<PolicyRule>, serde_yaml::Error> {
         serde_yaml::from_str(yaml_str)
+    }
+
+    /// Parse rules from a YAML string and load them into the engine.
+    ///
+    /// Returns the number of rules loaded. Any previously loaded rules are
+    /// replaced.
+    pub fn load_rules_from_yaml(&mut self, yaml: &str) -> Result<usize, serde_yaml::Error> {
+        let rules: Vec<PolicyRule> = serde_yaml::from_str(yaml)?;
+        let count = rules.len();
+        self.load_rules(rules);
+        Ok(count)
+    }
+
+    /// Read a YAML file from `path`, parse its rules, and load them into the
+    /// engine.
+    ///
+    /// Returns the number of rules loaded. Any previously loaded rules are
+    /// replaced.
+    pub fn load_rules_from_file(
+        &mut self,
+        path: &std::path::Path,
+    ) -> Result<usize, Box<dyn std::error::Error>> {
+        let content = std::fs::read_to_string(path)?;
+        let count = self.load_rules_from_yaml(&content)?;
+        Ok(count)
     }
 
     /// Evaluate `event` against all loaded rules in order.
@@ -439,5 +483,159 @@ mod tests {
         // Event is outbound → second condition fails → Allow
         let event = make_event();
         assert_eq!(engine.evaluate(&event), PolicyDecision::Allow);
+    }
+
+    // 11. rule_count on empty engine
+    #[test]
+    fn rule_count_empty_engine() {
+        let engine = PolicyEngine::new();
+        assert_eq!(engine.rule_count(), (0, 0));
+    }
+
+    // 12. rule_count with mix of enabled and disabled rules
+    #[test]
+    fn rule_count_mixed_enabled() {
+        let mut engine = PolicyEngine::new();
+        engine.load_rules(vec![
+            PolicyRule {
+                name: "enabled-rule".to_string(),
+                description: None,
+                enabled: true,
+                conditions: vec![],
+                action: Action::Allow,
+            },
+            PolicyRule {
+                name: "disabled-rule".to_string(),
+                description: None,
+                enabled: false,
+                conditions: vec![],
+                action: Action::Block,
+            },
+            PolicyRule {
+                name: "another-enabled".to_string(),
+                description: None,
+                enabled: true,
+                conditions: vec![],
+                action: Action::Alert,
+            },
+        ]);
+        assert_eq!(engine.rule_count(), (3, 2));
+    }
+
+    // 13. reload_rules replaces the previous rule set
+    #[test]
+    fn reload_rules_replaces_previous_set() {
+        let mut engine = PolicyEngine::new();
+        engine.load_rules(vec![PolicyRule {
+            name: "original-rule".to_string(),
+            description: None,
+            enabled: true,
+            conditions: vec![Condition {
+                field: "provider".to_string(),
+                operator: Operator::Equals,
+                value: "openai".to_string(),
+            }],
+            action: Action::Block,
+        }]);
+
+        // Confirm original rule is active
+        let event = make_event();
+        assert_eq!(
+            engine.evaluate(&event),
+            PolicyDecision::Block {
+                reason: "blocked by rule: original-rule".to_string(),
+            }
+        );
+        assert_eq!(engine.rule_count(), (1, 1));
+
+        // Replace with an empty rule set
+        engine.reload_rules(vec![]);
+        assert_eq!(engine.rule_count(), (0, 0));
+        assert_eq!(engine.evaluate(&event), PolicyDecision::Allow);
+    }
+
+    // 14. load_rules_from_yaml — valid YAML loads rules and returns count
+    #[test]
+    fn load_rules_from_yaml_valid() {
+        let yaml = r#"
+- name: block-unauthorized-models
+  description: Block access to non-approved AI models
+  enabled: true
+  conditions:
+    - field: provider
+      operator: not_equals
+      value: openai
+  action: block
+
+- name: alert-outbound-requests
+  description: Alert on all outbound agent requests
+  enabled: true
+  conditions:
+    - field: direction
+      operator: equals
+      value: outbound
+  action: alert
+"#;
+        let mut engine = PolicyEngine::new();
+        let count = engine
+            .load_rules_from_yaml(yaml)
+            .expect("valid YAML should parse");
+        assert_eq!(count, 2);
+        assert_eq!(engine.rule_count(), (2, 2));
+        // Verify rule names are preserved correctly.
+        let (total, _) = engine.rule_count();
+        assert_eq!(total, 2);
+    }
+
+    // 15. load_rules_from_yaml — invalid YAML returns an error
+    #[test]
+    fn load_rules_from_yaml_invalid() {
+        let bad_yaml = "{ not valid yaml sequence: [[[";
+        let mut engine = PolicyEngine::new();
+        assert!(
+            engine.load_rules_from_yaml(bad_yaml).is_err(),
+            "invalid YAML must return Err"
+        );
+        // Engine should remain empty (load was never committed).
+        assert_eq!(engine.rule_count(), (0, 0));
+    }
+
+    // 16. yaml_rules_evaluate_correctly — load from YAML then evaluate an event
+    #[test]
+    fn yaml_rules_evaluate_correctly() {
+        let yaml = r#"
+- name: block-unauthorized-models
+  description: Block access to non-approved AI models
+  enabled: true
+  conditions:
+    - field: provider
+      operator: not_equals
+      value: openai
+  action: block
+
+- name: alert-outbound-requests
+  description: Alert on all outbound agent requests
+  enabled: true
+  conditions:
+    - field: direction
+      operator: equals
+      value: outbound
+  action: alert
+"#;
+        let mut engine = PolicyEngine::new();
+        engine
+            .load_rules_from_yaml(yaml)
+            .expect("valid YAML should parse");
+
+        // make_event() produces an OpenAI outbound event.
+        // Rule 1 (not_equals openai) does NOT match — provider IS openai.
+        // Rule 2 (direction equals outbound) MATCHES → Alert.
+        let event = make_event();
+        assert_eq!(
+            engine.evaluate(&event),
+            PolicyDecision::Alert {
+                message: "alert from rule: alert-outbound-requests".to_string(),
+            }
+        );
     }
 }

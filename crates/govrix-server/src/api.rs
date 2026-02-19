@@ -2,10 +2,11 @@
 //!
 //! Extends Scout's management API with policy and tenant management routes.
 
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 use axum::{extract::State, routing::get, Json, Router};
 use govrix_common::license::LicenseTier;
+use govrix_policy::engine::PolicyEngine;
 use serde::Serialize;
 
 /// Shared state available to all platform API handlers.
@@ -15,6 +16,7 @@ pub struct PlatformState {
     pub policy_enabled: bool,
     pub pii_masking_enabled: bool,
     pub version: &'static str,
+    pub engine: Arc<RwLock<PolicyEngine>>,
 }
 
 #[derive(Serialize)]
@@ -46,9 +48,10 @@ struct LicenseFeatures {
 }
 
 async fn list_policies(State(state): State<Arc<PlatformState>>) -> Json<PolicySummary> {
+    let (total_rules, enabled_rules) = state.engine.read().unwrap().rule_count();
     Json(PolicySummary {
-        total_rules: 0,
-        enabled_rules: 0,
+        total_rules,
+        enabled_rules,
         policy_enabled: state.policy_enabled,
         pii_masking_enabled: state.pii_masking_enabled,
     })
