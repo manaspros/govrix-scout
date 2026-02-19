@@ -5,6 +5,7 @@ members = [
     "crates/govrix-server",
     "crates/govrix-policy",
     "crates/govrix-identity",
+    "crates/govrix-keygen",
 ]
 
 [workspace.package]
@@ -34,3 +35,4 @@ clap = { version = "4", features = ["derive", "env"] }
 rust_decimal = { version = "1", features = ["serde-float"] }
 base64 = "0.22"
 rcgen = { version = "0.13", features = ["x509-parser"] }
+axum-server = { version = "0.7", features = ["tls-rustls"] }

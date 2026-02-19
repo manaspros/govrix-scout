@@ -30,6 +30,9 @@ pub struct PlatformSection {
     /// Global cost budget cap in USD across all agents. `None` means unlimited.
     #[serde(default)]
     pub global_cost_limit_usd: Option<f64>,
+    /// Port on which the mTLS proxy listens (Enterprise tier only).
+    #[serde(default = "default_mtls_port")]
+    pub mtls_proxy_port: u16,
 }
 
 fn default_max_agents() -> u32 {
@@ -37,6 +40,9 @@ fn default_max_agents() -> u32 {
 }
 fn default_retention_days() -> u32 {
     30
+}
+fn default_mtls_port() -> u16 {
+    4443
 }
 
 impl Default for PlatformSection {
@@ -50,6 +56,7 @@ impl Default for PlatformSection {
             retention_days: default_retention_days(),
             global_token_limit: None,
             global_cost_limit_usd: None,
+            mtls_proxy_port: default_mtls_port(),
         }
     }
 }

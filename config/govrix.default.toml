@@ -47,3 +47,5 @@ retention_days = 30
 # Omit or set to null for unlimited.
 # global_token_limit = 10_000_000   # e.g. 10M tokens total
 # global_cost_limit_usd = 500.0     # e.g. $500 USD total
+# Port for the mTLS proxy listener (Enterprise tier, a2a_identity_enabled = true).
+mtls_proxy_port = 4443

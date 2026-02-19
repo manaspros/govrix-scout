@@ -50,21 +50,22 @@ async fn main() -> anyhow::Result<()> {
     );
 
     // ── Identity / mTLS ─────────────────────────────────────────────────────
-    let mtls_config = if license_info.a2a_identity_enabled {
+    let (mtls_config, platform_ca) = if license_info.a2a_identity_enabled {
         let org_name = license_info.org_id.as_deref().unwrap_or("govrix");
         match CertificateAuthority::generate(org_name) {
             Ok(ca) => {
                 tracing::info!(org = org_name, "CA generated, mTLS enabled");
-                MtlsConfig::with_ca(ca)
+                let mtls = MtlsConfig::with_ca(ca.clone());
+                (mtls, Some(Arc::new(ca)))
             }
             Err(e) => {
                 tracing::warn!(error = %e, "CA generation failed, falling back to mTLS disabled");
-                MtlsConfig::default()
+                (MtlsConfig::default(), None)
             }
         }
     } else {
         tracing::info!("mTLS disabled (license tier)");
-        MtlsConfig::default()
+        (MtlsConfig::default(), None)
     };
     let mtls_config = Arc::new(mtls_config);
 
@@ -162,6 +163,24 @@ async fn main() -> anyhow::Result<()> {
     );
     tracing::info!(pii_enabled, "policy engine initialized");
 
+    // ── mTLS proxy config (TLS listener — v1 wiring) ─────────────────────────
+    if let Some(ref ca) = platform_ca {
+        let tls_config = axum_server::tls_rustls::RustlsConfig::from_pem(
+            ca.ca_cert.as_bytes().to_vec(),
+            ca.ca_key.as_bytes().to_vec(),
+        )
+        .await
+        .expect("TLS config from CA PEM");
+        let mtls_addr: std::net::SocketAddr =
+            format!("0.0.0.0:{}", platform_cfg.platform.mtls_proxy_port)
+                .parse()
+                .unwrap();
+        tracing::info!(addr = %mtls_addr, "mTLS proxy TLS config built");
+        // Full TLS termination integration with Scout's router is a separate spike.
+        // For v1 we verify the RustlsConfig compiles and the PEM bytes are valid.
+        let _ = tls_config;
+    }
+
     // ── Proxy server ────────────────────────────────────────────────────────
     let proxy_addr: SocketAddr = format!("{}:{}", config.proxy.bind, config.proxy.port)
         .parse()
@@ -194,6 +213,7 @@ async fn main() -> anyhow::Result<()> {
         mtls_enabled: mtls_config.is_mtls_enabled(),
         version: env!("CARGO_PKG_VERSION"),
         engine: Arc::clone(&policy_engine),
+        ca: platform_ca.clone(),
     });
     let platform_routes = api::platform_router(platform_state);
     let api_handle = tokio::spawn(async move {

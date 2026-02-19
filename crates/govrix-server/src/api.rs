@@ -23,6 +23,7 @@ pub struct PlatformState {
     pub mtls_enabled: bool,
     pub version: &'static str,
     pub engine: Arc<RwLock<PolicyEngine>>,
+    pub ca: Option<Arc<govrix_identity::ca::CertificateAuthority>>,
 }
 
 #[derive(Serialize)]
@@ -68,6 +69,20 @@ struct ReloadRequest {
 struct ReloadResponse {
     rules_loaded: usize,
     message: String,
+}
+
+/// Request body for `POST /api/v1/certs/issue`.
+#[derive(Deserialize)]
+struct IssueCertRequest {
+    agent_id: String,
+}
+
+/// Response body for a successfully issued agent certificate.
+#[derive(Serialize)]
+struct IssueCertResponse {
+    cert_pem: String,
+    key_pem: String,
+    expires_at: String,
 }
 
 async fn list_policies(State(state): State<Arc<PlatformState>>) -> Json<PolicySummary> {
@@ -160,6 +175,27 @@ async fn reload_policies(
     }))
 }
 
+/// `POST /api/v1/certs/issue`
+///
+/// Issue a new mTLS certificate for the given agent ID, signed by the platform CA.
+/// Returns `403 Forbidden` if mTLS / CA is not enabled on this license tier.
+async fn issue_cert(
+    State(state): State<Arc<PlatformState>>,
+    Json(req): Json<IssueCertRequest>,
+) -> Result<Json<IssueCertResponse>, (StatusCode, String)> {
+    let ca = state.ca.as_ref().ok_or((
+        StatusCode::FORBIDDEN,
+        "mTLS not enabled on this license tier".to_string(),
+    ))?;
+    let cert = govrix_identity::certs::issue_agent_cert(ca, &req.agent_id)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    Ok(Json(IssueCertResponse {
+        cert_pem: cert.cert_pem,
+        key_pem: cert.key_pem,
+        expires_at: cert.expires_at.to_rfc3339(),
+    }))
+}
+
 pub fn platform_router(state: Arc<PlatformState>) -> Router {
     Router::new()
         .route("/api/v1/platform/health", get(platform_health))
@@ -167,6 +203,7 @@ pub fn platform_router(state: Arc<PlatformState>) -> Router {
         .route("/api/v1/policies", get(list_policies))
         .route("/api/v1/policies/reload", post(reload_policies))
         .route("/api/v1/tenants", get(list_tenants))
+        .route("/api/v1/certs/issue", post(issue_cert))
         .with_state(state)
 }
 
@@ -185,6 +222,7 @@ mod tests {
             mtls_enabled: false,
             version: "test",
             engine: Arc::new(RwLock::new(PolicyEngine::new())),
+            ca: None,
         })
     }
 
