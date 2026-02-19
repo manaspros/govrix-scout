@@ -30,3 +30,4 @@ uuid = { version = "1", features = ["v7", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 figment = { version = "0.10", features = ["toml", "env"] }
 clap = { version = "4", features = ["derive", "env"] }
+rust_decimal = { version = "1", features = ["serde-float"] }

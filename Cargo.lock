@@ -817,8 +817,11 @@ version = "0.1.0"
 dependencies = [
  "agentmesh-common",
  "govrix-common",
+ "regex",
+ "rust_decimal",
  "serde",
  "serde_json",
+ "serde_yaml",
  "thiserror",
  "tracing",
  "uuid",

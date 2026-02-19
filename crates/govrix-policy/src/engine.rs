@@ -157,20 +157,13 @@ impl PolicyEngine {
     ///
     /// Unknown field names return an empty string so that conditions on them
     /// never accidentally match.
-    fn get_field_value(
-        &self,
-        event: &agentmesh_common::models::AgentEvent,
-        field: &str,
-    ) -> String {
+    fn get_field_value(&self, event: &agentmesh_common::models::AgentEvent, field: &str) -> String {
         match field {
             "model" => event.model.clone().unwrap_or_default(),
             "agent_id" => event.agent_id.clone(),
             "provider" => event.provider.to_string(),
             "direction" => event.direction.to_string(),
-            "cost_usd" => event
-                .cost_usd
-                .map(|c| c.to_string())
-                .unwrap_or_default(),
+            "cost_usd" => event.cost_usd.map(|c| c.to_string()).unwrap_or_default(),
             "input_tokens" => event
                 .input_tokens
                 .map(|t| t.to_string())
