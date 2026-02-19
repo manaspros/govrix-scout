@@ -11,6 +11,7 @@ use axum::{
     Json, Router,
 };
 use govrix_common::license::LicenseTier;
+use govrix_common::tenant_registry::TenantRegistry;
 use govrix_policy::engine::PolicyEngine;
 use serde::{Deserialize, Serialize};
 
@@ -24,6 +25,7 @@ pub struct PlatformState {
     pub version: &'static str,
     pub engine: Arc<RwLock<PolicyEngine>>,
     pub ca: Option<Arc<govrix_identity::ca::CertificateAuthority>>,
+    pub tenant_registry: Arc<TenantRegistry>,
 }
 
 #[derive(Serialize)]
@@ -97,11 +99,35 @@ async fn list_policies(State(state): State<Arc<PlatformState>>) -> Json<PolicySu
 }
 
 async fn list_tenants(State(state): State<Arc<PlatformState>>) -> Json<Vec<TenantInfo>> {
-    Json(vec![TenantInfo {
-        id: "default".to_string(),
-        name: "Default Tenant".to_string(),
+    Json(
+        state
+            .tenant_registry
+            .list()
+            .into_iter()
+            .map(|t| TenantInfo {
+                id: t.id.to_string(),
+                name: t.name,
+                max_agents: state.max_agents,
+            })
+            .collect(),
+    )
+}
+
+#[derive(Deserialize)]
+struct CreateTenantRequest {
+    name: String,
+}
+
+async fn create_tenant(
+    State(state): State<Arc<PlatformState>>,
+    Json(req): Json<CreateTenantRequest>,
+) -> Json<TenantInfo> {
+    let t = state.tenant_registry.create(req.name);
+    Json(TenantInfo {
+        id: t.id.to_string(),
+        name: t.name,
         max_agents: state.max_agents,
-    }])
+    })
 }
 
 async fn platform_health(State(state): State<Arc<PlatformState>>) -> Json<serde_json::Value> {
@@ -202,7 +228,7 @@ pub fn platform_router(state: Arc<PlatformState>) -> Router {
         .route("/api/v1/platform/license", get(license_info))
         .route("/api/v1/policies", get(list_policies))
         .route("/api/v1/policies/reload", post(reload_policies))
-        .route("/api/v1/tenants", get(list_tenants))
+        .route("/api/v1/tenants", get(list_tenants).post(create_tenant))
         .route("/api/v1/certs/issue", post(issue_cert))
         .with_state(state)
 }
@@ -210,6 +236,7 @@ pub fn platform_router(state: Arc<PlatformState>) -> Router {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use govrix_common::tenant_registry::TenantRegistry;
     use govrix_policy::engine::PolicyEngine;
     use std::sync::{Arc, RwLock};
 
@@ -223,7 +250,30 @@ mod tests {
             version: "test",
             engine: Arc::new(RwLock::new(PolicyEngine::new())),
             ca: None,
+            tenant_registry: Arc::new(TenantRegistry::new()),
         })
+    }
+
+    #[test]
+    fn list_tenants_returns_default() {
+        let state = make_state();
+        let tenants = state.tenant_registry.list();
+        assert_eq!(tenants.len(), 1);
+        assert_eq!(tenants[0].name, "default");
+    }
+
+    #[test]
+    fn create_tenant_via_registry() {
+        let state = make_state();
+        state.tenant_registry.create("acme".to_string());
+        let tenants = state.tenant_registry.list();
+        assert_eq!(tenants.len(), 2);
+    }
+
+    #[test]
+    fn make_state_compiles_with_tenant_registry() {
+        let state = make_state();
+        assert_eq!(state.tenant_registry.count(), 1);
     }
 
     #[test]

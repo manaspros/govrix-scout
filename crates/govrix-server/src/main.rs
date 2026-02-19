@@ -69,6 +69,13 @@ async fn main() -> anyhow::Result<()> {
     };
     let mtls_config = Arc::new(mtls_config);
 
+    // ── Tenant registry ──────────────────────────────────────────────────────
+    let tenant_registry = Arc::new(govrix_common::tenant_registry::TenantRegistry::new());
+    tracing::info!(
+        tenants = tenant_registry.count(),
+        "tenant registry initialized"
+    );
+
     // ── Scout configuration ─────────────────────────────────────────────────
     let config_path = std::env::var("GOVRIX_CONFIG")
         .or_else(|_| std::env::var("AGENTMESH_CONFIG"))
@@ -151,6 +158,25 @@ async fn main() -> anyhow::Result<()> {
         });
     }
 
+    // Per-agent limits from config
+    for (agent_id, max_tokens) in &platform_cfg.platform.agent_token_limits {
+        budget.set_agent_limit(
+            agent_id.clone(),
+            govrix_policy::budget::BudgetLimit {
+                max_tokens: Some(*max_tokens),
+                max_cost_usd: platform_cfg
+                    .platform
+                    .agent_cost_limits
+                    .get(agent_id)
+                    .copied(),
+            },
+        );
+    }
+    tracing::info!(
+        agent_limits = platform_cfg.platform.agent_token_limits.len(),
+        "per-agent budget limits loaded"
+    );
+
     tracing::info!(
         global_token_limit = ?effective_token_limit,
         global_cost_limit_usd = ?effective_cost_limit,
@@ -164,21 +190,34 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!(pii_enabled, "policy engine initialized");
 
     // ── mTLS proxy config (TLS listener — v1 wiring) ─────────────────────────
-    if let Some(ref ca) = platform_ca {
-        let tls_config = axum_server::tls_rustls::RustlsConfig::from_pem(
+    let mtls_tls_config = if let Some(ref ca) = platform_ca {
+        let cfg = axum_server::tls_rustls::RustlsConfig::from_pem(
             ca.ca_cert.as_bytes().to_vec(),
             ca.ca_key.as_bytes().to_vec(),
         )
         .await
         .expect("TLS config from CA PEM");
-        let mtls_addr: std::net::SocketAddr =
-            format!("0.0.0.0:{}", platform_cfg.platform.mtls_proxy_port)
-                .parse()
-                .unwrap();
-        tracing::info!(addr = %mtls_addr, "mTLS proxy TLS config built");
-        // Full TLS termination integration with Scout's router is a separate spike.
-        // For v1 we verify the RustlsConfig compiles and the PEM bytes are valid.
-        let _ = tls_config;
+        tracing::info!("mTLS proxy TLS config built");
+        Some(cfg)
+    } else {
+        None
+    };
+
+    if let Some(tls_config) = mtls_tls_config {
+        let mtls_addr: SocketAddr = format!("0.0.0.0:{}", platform_cfg.platform.mtls_proxy_port)
+            .parse()
+            .expect("invalid mTLS port");
+        tracing::info!(addr = %mtls_addr, "mTLS TLS listener starting");
+        tokio::spawn(async move {
+            let app =
+                axum::Router::new().route("/health", axum::routing::get(|| async { "mTLS OK" }));
+            if let Err(e) = axum_server::bind_rustls(mtls_addr, tls_config)
+                .serve(app.into_make_service())
+                .await
+            {
+                tracing::error!("mTLS server error: {e}");
+            }
+        });
     }
 
     // ── Proxy server ────────────────────────────────────────────────────────
@@ -214,6 +253,7 @@ async fn main() -> anyhow::Result<()> {
         version: env!("CARGO_PKG_VERSION"),
         engine: Arc::clone(&policy_engine),
         ca: platform_ca.clone(),
+        tenant_registry: Arc::clone(&tenant_registry),
     });
     let platform_routes = api::platform_router(platform_state);
     let api_handle = tokio::spawn(async move {
