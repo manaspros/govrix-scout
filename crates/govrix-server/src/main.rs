@@ -15,7 +15,10 @@ use std::sync::{Arc, RwLock};
 
 use agentmesh_common::config::Config;
 use agentmesh_proxy::{api as scout_api, events, policy::PolicyHook, proxy};
-use govrix_common::license;
+use govrix_common::config::PlatformConfig;
+use govrix_common::license::{self, LicenseTier};
+use govrix_identity::{ca::CertificateAuthority, mtls::MtlsConfig};
+use govrix_policy::budget::{BudgetLimit, BudgetTracker};
 use govrix_policy::engine::PolicyEngine;
 use govrix_policy::hook::GovrixPolicyHook;
 use tracing_subscriber::EnvFilter;
@@ -46,6 +49,25 @@ async fn main() -> anyhow::Result<()> {
         "license validated"
     );
 
+    // ── Identity / mTLS ─────────────────────────────────────────────────────
+    let mtls_config = if license_info.a2a_identity_enabled {
+        let org_name = license_info.org_id.as_deref().unwrap_or("govrix");
+        match CertificateAuthority::generate(org_name) {
+            Ok(ca) => {
+                tracing::info!(org = org_name, "CA generated, mTLS enabled");
+                MtlsConfig::with_ca(ca)
+            }
+            Err(e) => {
+                tracing::warn!(error = %e, "CA generation failed, falling back to mTLS disabled");
+                MtlsConfig::default()
+            }
+        }
+    } else {
+        tracing::info!("mTLS disabled (license tier)");
+        MtlsConfig::default()
+    };
+    let mtls_config = Arc::new(mtls_config);
+
     // ── Scout configuration ─────────────────────────────────────────────────
     let config_path = std::env::var("GOVRIX_CONFIG")
         .or_else(|_| std::env::var("AGENTMESH_CONFIG"))
@@ -57,6 +79,11 @@ async fn main() -> anyhow::Result<()> {
         api_port = config.api.port,
         "configuration loaded"
     );
+
+    // ── Platform configuration ───────────────────────────────────────────────
+    let govrix_config_path =
+        std::env::var("GOVRIX_CONFIG").unwrap_or_else(|_| "config/govrix.default.toml".to_string());
+    let platform_cfg = PlatformConfig::load(&govrix_config_path);
 
     // ── Database pool ───────────────────────────────────────────────────────
     let pool = match agentmesh_store::connect(&config.database).await {
@@ -90,10 +117,49 @@ async fn main() -> anyhow::Result<()> {
     // ── Policy engine ────────────────────────────────────────────────────────
     let policy_engine = Arc::new(RwLock::new(PolicyEngine::new()));
     let pii_enabled = license_info.policy_enabled;
-    let policy_hook: Arc<dyn PolicyHook> = Arc::new(GovrixPolicyHook::new(
-        Arc::clone(&policy_engine),
-        pii_enabled,
-    ));
+
+    // ── Budget tracker ───────────────────────────────────────────────────────
+    // Priority: explicit config values override tier-based defaults.
+    // Community tier gets no global limit (agent count is enforced elsewhere).
+    let mut budget = BudgetTracker::new();
+
+    let config_token_limit = platform_cfg.platform.global_token_limit;
+    let config_cost_limit = platform_cfg.platform.global_cost_limit_usd;
+
+    // Apply tier-based defaults when no explicit config limit is set.
+    let tier_token_limit: Option<u64> = match &license_info.tier {
+        LicenseTier::Community => None,
+        LicenseTier::Starter => Some(50_000_000), // 50M tokens
+        LicenseTier::Growth => Some(500_000_000), // 500M tokens
+        LicenseTier::Enterprise => None,          // unlimited by default
+    };
+    let tier_cost_limit: Option<f64> = match &license_info.tier {
+        LicenseTier::Community => None,
+        LicenseTier::Starter => Some(500.0),  // $500 USD
+        LicenseTier::Growth => Some(5_000.0), // $5,000 USD
+        LicenseTier::Enterprise => None,      // unlimited by default
+    };
+
+    let effective_token_limit = config_token_limit.or(tier_token_limit);
+    let effective_cost_limit = config_cost_limit.or(tier_cost_limit);
+
+    if effective_token_limit.is_some() || effective_cost_limit.is_some() {
+        budget.set_global_limit(BudgetLimit {
+            max_tokens: effective_token_limit,
+            max_cost_usd: effective_cost_limit,
+        });
+    }
+
+    tracing::info!(
+        global_token_limit = ?effective_token_limit,
+        global_cost_limit_usd = ?effective_cost_limit,
+        "budget tracker configured"
+    );
+
+    let policy_hook: Arc<dyn PolicyHook> = Arc::new(
+        GovrixPolicyHook::new(Arc::clone(&policy_engine), pii_enabled)
+            .with_budget(Arc::new(budget)),
+    );
     tracing::info!(pii_enabled, "policy engine initialized");
 
     // ── Proxy server ────────────────────────────────────────────────────────
@@ -125,6 +191,7 @@ async fn main() -> anyhow::Result<()> {
         max_agents: license_info.max_agents,
         policy_enabled: license_info.policy_enabled,
         pii_masking_enabled: license_info.pii_masking_enabled,
+        mtls_enabled: mtls_config.is_mtls_enabled(),
         version: env!("CARGO_PKG_VERSION"),
         engine: Arc::clone(&policy_engine),
     });

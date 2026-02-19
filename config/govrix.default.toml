@@ -43,3 +43,7 @@ a2a_identity_enabled = false
 max_agents = 100
 retention_days = 30
 # license_key = "your-license-key-here"
+# Global budget limits applied across all agents (cumulative, not per-request).
+# Omit or set to null for unlimited.
+# global_token_limit = 10_000_000   # e.g. 10M tokens total
+# global_cost_limit_usd = 500.0     # e.g. $500 USD total

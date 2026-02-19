@@ -26,6 +26,11 @@ impl MtlsConfig {
             require_client_cert: true,
         }
     }
+
+    /// Return `true` if mTLS is enabled.
+    pub fn is_mtls_enabled(&self) -> bool {
+        self.enabled
+    }
 }
 
 impl Default for MtlsConfig {
