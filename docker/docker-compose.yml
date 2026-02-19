@@ -1,0 +1,28 @@
+services:
+  postgres:
+    image: timescale/timescaledb:latest-pg16
+    environment:
+      POSTGRES_DB: govrix
+      POSTGRES_USER: govrix
+      POSTGRES_PASSWORD: govrix
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  govrix:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    depends_on:
+      - postgres
+    ports:
+      - "8080:8080"
+      - "4001:4001"
+    environment:
+      GOVRIX__DATABASE__URL: postgres://govrix:govrix@postgres:5432/govrix
+      GOVRIX__PLATFORM__POLICY_ENABLED: "true"
+      RUST_LOG: info
+
+volumes:
+  pgdata:
