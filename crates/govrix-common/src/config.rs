@@ -33,6 +33,13 @@ pub struct PlatformSection {
     /// Port on which the mTLS proxy listens (Enterprise tier only).
     #[serde(default = "default_mtls_port")]
     pub mtls_proxy_port: u16,
+    /// Per-agent token budget. Key = agent_id prefix or "*" for all.
+    /// E.g.: { "agent-prod-*" = 100000, "agent-test-*" = 10000 }
+    #[serde(default)]
+    pub agent_token_limits: std::collections::HashMap<String, u64>,
+    /// Per-agent cost budget in USD.
+    #[serde(default)]
+    pub agent_cost_limits: std::collections::HashMap<String, f64>,
 }
 
 fn default_max_agents() -> u32 {
@@ -57,6 +64,8 @@ impl Default for PlatformSection {
             global_token_limit: None,
             global_cost_limit_usd: None,
             mtls_proxy_port: default_mtls_port(),
+            agent_token_limits: std::collections::HashMap::new(),
+            agent_cost_limits: std::collections::HashMap::new(),
         }
     }
 }

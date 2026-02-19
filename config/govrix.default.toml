@@ -49,3 +49,9 @@ retention_days = 30
 # global_cost_limit_usd = 500.0     # e.g. $500 USD total
 # Port for the mTLS proxy listener (Enterprise tier, a2a_identity_enabled = true).
 mtls_proxy_port = 4443
+
+# Per-agent token and cost limits (optional)
+# [platform.agent_token_limits]
+# "agent-prod" = 1_000_000
+# [platform.agent_cost_limits]
+# "agent-prod" = 10.0
