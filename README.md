@@ -52,6 +52,22 @@ export ANTHROPIC_BASE_URL=http://localhost:4000/anthropic
 
 No license key supplied = Community tier. Expired or invalid keys also fall back to Community.
 
+## What's Shipped vs. Roadmap
+
+**Currently implemented** (all tiers):
+- Policy enforcement (YAML rules)
+- PII masking (Growth tier and above)
+- Compliance tagging
+- mTLS agent identity (Enterprise tier)
+- Audit logging
+
+**Roadmap items** (not yet implemented):
+- SSO/SAML integration (Okta, Azure AD, Google Workspace)
+- Role-based access control (RBAC) for dashboard
+- Advanced team management features
+
+See [platform-status.md](docs/platform-status.md) for detailed implementation status across all features.
+
 ## API Endpoints
 
 All Scout endpoints are available. Platform adds:

@@ -6,7 +6,7 @@ use std::sync::{Arc, RwLock};
 
 use axum::{
     body::Body,
-    extract::{Request, State},
+    extract::{Path, Request, State},
     http::{header, StatusCode},
     middleware::{self, Next},
     response::{IntoResponse, Response},
@@ -28,6 +28,8 @@ pub struct PlatformState {
     pub a2a_identity_enabled: bool,
     pub retention_days: u32,
     pub mtls_enabled: bool,
+    pub audit_trail_enabled: bool,
+    pub budget_tracking_enabled: bool,
     pub version: &'static str,
     pub engine: Arc<RwLock<PolicyEngine>>,
     pub ca: Option<Arc<govrix_identity::ca::CertificateAuthority>>,
@@ -234,6 +236,80 @@ async fn issue_cert(
     }))
 }
 
+/// `GET /api/v1/compliance/{framework}`
+///
+/// Generate a compliance report for the requested framework.
+/// Supported values: `soc2`, `eu-ai-act`.
+async fn compliance_report(
+    State(state): State<Arc<PlatformState>>,
+    Path(framework): Path<String>,
+) -> Result<Json<govrix_policy::compliance::ComplianceReport>, (StatusCode, String)> {
+    use govrix_policy::compliance::ComplianceReport;
+
+    match framework.as_str() {
+        "soc2" => Ok(Json(ComplianceReport::soc2(
+            state.audit_trail_enabled,
+            state.policy_enabled,
+            state.pii_masking_enabled,
+            state.mtls_enabled,
+            state.budget_tracking_enabled,
+        ))),
+        "eu-ai-act" => Ok(Json(ComplianceReport::eu_ai_act(
+            state.audit_trail_enabled,
+            state.policy_enabled,
+            state.pii_masking_enabled,
+            state.budget_tracking_enabled,
+        ))),
+        other => Err((
+            StatusCode::BAD_REQUEST,
+            format!("unsupported framework '{other}'; supported: soc2, eu-ai-act"),
+        )),
+    }
+}
+
+/// `GET /api/v1/sessions/demo`
+///
+/// Returns a demo session recording to verify the Session Recorder feature
+/// is wired correctly.  Real DB-backed queries will replace this later.
+async fn demo_session_recording() -> Json<serde_json::Value> {
+    use govrix_policy::session::{SessionEvent, SessionRecording};
+
+    let events = vec![
+        SessionEvent {
+            timestamp: "2026-02-19T10:00:00Z".to_string(),
+            agent_id: "demo-agent".to_string(),
+            method: "POST".to_string(),
+            upstream_target: "https://api.openai.com/v1/chat/completions".to_string(),
+            compliance_tag: "pass:all".to_string(),
+            tokens_in: Some(100),
+            tokens_out: Some(50),
+            cost_usd: Some(0.0015),
+            status_code: Some(200),
+            lineage_hash: "abc123".to_string(),
+        },
+        SessionEvent {
+            timestamp: "2026-02-19T10:00:05Z".to_string(),
+            agent_id: "demo-agent".to_string(),
+            method: "POST".to_string(),
+            upstream_target: "https://api.openai.com/v1/chat/completions".to_string(),
+            compliance_tag: "pass:all".to_string(),
+            tokens_in: Some(200),
+            tokens_out: Some(100),
+            cost_usd: Some(0.003),
+            status_code: Some(200),
+            lineage_hash: "def456".to_string(),
+        },
+    ];
+
+    let recording = SessionRecording::from_events(
+        "sess-demo-001".to_string(),
+        "demo-agent".to_string(),
+        events,
+    );
+
+    Json(serde_json::to_value(&recording).unwrap())
+}
+
 /// Bearer token auth middleware for platform routes.
 ///
 /// If `AGENTMESH_API_KEY` is set, all requests must include
@@ -301,6 +377,8 @@ pub fn platform_router(state: Arc<PlatformState>) -> Router {
         .route("/api/v1/policies/reload", post(reload_policies))
         .route("/api/v1/tenants", get(list_tenants).post(create_tenant))
         .route("/api/v1/certs/issue", post(issue_cert))
+        .route("/api/v1/compliance/{framework}", get(compliance_report))
+        .route("/api/v1/sessions/demo", get(demo_session_recording))
         .layer(middleware::from_fn(require_api_key))
         .with_state(state);
 
@@ -327,6 +405,8 @@ mod tests {
             a2a_identity_enabled: true,
             retention_days: 365,
             mtls_enabled: false,
+            audit_trail_enabled: true,
+            budget_tracking_enabled: false,
             version: "test",
             engine: Arc::new(RwLock::new(PolicyEngine::new())),
             ca: None,

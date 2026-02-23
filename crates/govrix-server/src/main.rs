@@ -331,6 +331,8 @@ async fn main() -> anyhow::Result<()> {
         a2a_identity_enabled: license_info.a2a_identity_enabled,
         retention_days: license_info.retention_days,
         mtls_enabled: mtls_config.is_mtls_enabled(),
+        audit_trail_enabled: pool.is_some(),
+        budget_tracking_enabled: effective_token_limit.is_some() || effective_cost_limit.is_some(),
         version: env!("CARGO_PKG_VERSION"),
         engine: Arc::clone(&policy_engine),
         ca: platform_ca.clone(),
