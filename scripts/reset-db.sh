@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# AgentMesh — Reset database (drop + recreate + re-migrate)
+# Govrix Scout — Reset database (drop + recreate + re-migrate)
 # ──────────────────────────────────────────────────────────────────────────────
 # Usage: ./scripts/reset-db.sh [--yes]
 #
-# Drops the 'agentmesh' database inside the running postgres container,
+# Drops the 'Govrix Scout' database inside the running postgres container,
 # recreates it, and re-runs all migration files in order.
 # Useful for starting completely fresh during development.
 #
@@ -29,13 +29,13 @@ ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 COMPOSE_FILE="$ROOT_DIR/docker/docker-compose.yml"
 MIGRATIONS_DIR="$ROOT_DIR/migrations"
 
-CONTAINER="agentmesh-postgres"
-PG_USER="agentmesh"
-PG_DB="agentmesh"
-PG_PASS="agentmesh_dev"
+CONTAINER="govrix-scout-postgres"
+PG_USER="Govrix Scout"
+PG_DB="Govrix Scout"
+PG_PASS="govrix_scout_dev"
 
 echo ""
-echo -e "${BOLD}${RED}AgentMesh — Database Reset${NC}"
+echo -e "${BOLD}${RED}Govrix Scout — Database Reset${NC}"
 echo "────────────────────────────────────────────────────────────────"
 warn "This will DROP and RECREATE the '$PG_DB' database."
 warn "ALL data will be permanently deleted."

@@ -49,5 +49,5 @@ SELECT add_retention_policy(
 
 COMMENT ON TABLE events IS
     'Core audit log (TimescaleDB hypertable): every agent request/response '
-    'intercepted by the AgentMesh proxy. Partitioned by 1-day chunks, '
+    'intercepted by the Govrix Scout proxy. Partitioned by 1-day chunks, '
     'compressed after 1 day, retained for 7 days (OSS).';

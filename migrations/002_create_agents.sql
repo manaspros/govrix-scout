@@ -1,7 +1,7 @@
 -- Migration 002: Create the agents registry table
 --
 -- Tracks identity, capabilities, and aggregate statistics for every AI agent
--- observed by the AgentMesh proxy. The primary key is a VARCHAR agent identifier
+-- observed by the Govrix Scout proxy. The primary key is a VARCHAR agent identifier
 -- (not UUID) because agent IDs come from headers, API key mappings, or source IP.
 --
 -- OSS soft limit: 25 agents. Enforced in application logic, not at DB level.
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS agents (
 COMMENT ON TABLE agents IS
     'Agent registry: identity, lifecycle status, and aggregate statistics for every observed AI agent.';
 COMMENT ON COLUMN agents.id IS
-    'Agent identifier extracted from X-AgentMesh-Agent-Id header, Agent-Name header, API key suffix, or source IP fallback.';
+    'Agent identifier extracted from X-govrix-scout-Agent-Id header, Agent-Name header, API key suffix, or source IP fallback.';
 COMMENT ON COLUMN agents.agent_type IS
     'Framework classification: mcp_client, langchain, crewai, autogen, direct_api, a2a, custom, unknown.';
 COMMENT ON COLUMN agents.status IS

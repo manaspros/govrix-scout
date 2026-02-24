@@ -1,33 +1,33 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: agentmesh
-  namespace: agentmesh
+  name: Govrix Scout
+  namespace: Govrix Scout
   labels:
-    app: agentmesh
+    app: Govrix Scout
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: agentmesh
+      app: Govrix Scout
   template:
     metadata:
       labels:
-        app: agentmesh
+        app: Govrix Scout
     spec:
       containers:
-      - name: agentmesh
-        image: agentmesh:latest
+      - name: Govrix Scout
+        image: Govrix Scout:latest
         ports:
         - containerPort: 4000
           name: proxy
         - containerPort: 4001
           name: api
         env:
-        - name: AGENTMESH_LOG
-          value: "agentmesh=info"
+        - name: govrix_scout_LOG
+          value: "Govrix Scout=info"
         - name: RUST_LOG
-          value: "agentmesh=info"
+          value: "Govrix Scout=info"
         livenessProbe:
           httpGet:
             path: /health

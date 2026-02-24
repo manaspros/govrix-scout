@@ -1,8 +1,8 @@
-# AgentMesh Default Configuration
+# Govrix Scout Default Configuration
 # ──────────────────────────────────────────────────────────────────────────────
 # All values here are defaults. Override via:
-#   1. A custom config file: AGENTMESH_CONFIG=/path/to/config.toml
-#   2. Environment variables: AGENTMESH_<SECTION>_<KEY> (e.g. AGENTMESH_DATABASE_URL)
+#   1. A custom config file: GOVRIX_CONFIG=/path/to/config.toml
+#   2. Environment variables: GOVRIX_<SECTION>_<KEY> (e.g. GOVRIX_DATABASE_URL)
 #
 # Environment variables always take precedence over this file.
 # ──────────────────────────────────────────────────────────────────────────────
@@ -37,9 +37,9 @@ upstream_anthropic = "https://api.anthropic.com"
 # ── Database ──────────────────────────────────────────────────────────────────
 [database]
 # PostgreSQL connection URL.
-# IMPORTANT: In production, use the AGENTMESH_DATABASE_URL environment variable
+# IMPORTANT: In production, use the GOVRIX_DATABASE_URL environment variable
 # instead of storing credentials in this file.
-url = "postgres://agentmesh:agentmesh@localhost:5432/agentmesh"
+url = "postgres://Govrix Scout:Govrix Scout@localhost:5432/Govrix Scout"
 
 # Connection pool settings.
 max_connections = 20
@@ -72,8 +72,8 @@ port = 3000
 # ── Data Retention ────────────────────────────────────────────────────────────
 [retention]
 # Number of days to retain event data in TimescaleDB.
-# Default: 7 days. AgentMesh OSS soft limit.
-# AgentMesh Enterprise supports unlimited retention.
+# Default: 7 days. Govrix Scout OSS soft limit.
+# Govrix Scout Enterprise supports unlimited retention.
 events_days = 7
 
 # Number of days to retain cost aggregation data.
@@ -82,7 +82,7 @@ cost_days = 90
 # ── Telemetry / Observability ─────────────────────────────────────────────────
 [telemetry]
 # Log level: trace | debug | info | warn | error
-# Override with AGENTMESH_LOG_LEVEL environment variable.
+# Override with GOVRIX_LOG_LEVEL environment variable.
 log_level = "info"
 
 # Enable Prometheus metrics endpoint at GET /metrics
@@ -95,7 +95,7 @@ prometheus_port = 9090
 # [agents]
 # Soft limit on the number of agents tracked in OSS.
 # When exceeded, a warning is logged. No hard blocking.
-# AgentMesh Enterprise removes this limit.
+# Govrix Scout Enterprise removes this limit.
 # max_agents = 25
 
 # ── Proxy Route Configuration ─────────────────────────────────────────────────
@@ -104,7 +104,7 @@ prometheus_port = 9090
 # To proxy to MCP servers: configure your MCP client to use http://localhost:4000/proxy/mcp/<server>/
 #
 # Agent identification (in priority order):
-#   1. X-AgentMesh-Agent-Id header  — explicit agent ID
+#   1. X-govrix-scout-Agent-Id header  — explicit agent ID
 #   2. Agent-Name header            — human-readable name
 #   3. API key suffix mapping       — last 8 chars of Authorization token
 #   4. Source IP address            — ip:<address>

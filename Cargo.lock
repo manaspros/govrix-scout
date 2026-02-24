@@ -3,102 +3,6 @@
 version = 4
 
 [[package]]
-name = "agentmesh-cli"
-version = "0.1.0"
-dependencies = [
- "agentmesh-common",
- "anyhow",
- "clap",
- "comfy-table",
- "reqwest",
- "serde",
- "serde_json",
- "serde_yaml",
- "thiserror",
- "tokio",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "agentmesh-common"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "chrono",
- "rust_decimal",
- "rust_decimal_macros",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
- "toml",
- "tracing",
- "uuid",
-]
-
-[[package]]
-name = "agentmesh-proxy"
-version = "0.1.0"
-dependencies = [
- "agentmesh-common",
- "agentmesh-store",
- "anyhow",
- "axum",
- "bytes",
- "chrono",
- "hex",
- "http",
- "http-body-util",
- "hyper",
- "hyper-util",
- "regex",
- "reqwest",
- "rust_decimal",
- "serde",
- "serde_json",
- "serde_yaml",
- "sha2",
- "thiserror",
- "tokio",
- "tower",
- "tower-http",
- "tracing",
- "tracing-subscriber",
- "uuid",
-]
-
-[[package]]
-name = "agentmesh-reports"
-version = "0.1.0"
-dependencies = [
- "agentmesh-common",
- "chrono",
- "minijinja",
- "serde",
- "serde_json",
- "thiserror",
- "tracing",
- "uuid",
-]
-
-[[package]]
-name = "agentmesh-store"
-version = "0.1.0"
-dependencies = [
- "agentmesh-common",
- "chrono",
- "rust_decimal",
- "serde",
- "serde_json",
- "sqlx",
- "thiserror",
- "tokio",
- "tracing",
- "uuid",
-]
-
-[[package]]
 name = "ahash"
 version = "0.7.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -830,6 +734,102 @@ dependencies = [
  "r-efi",
  "wasip2",
  "wasip3",
+]
+
+[[package]]
+name = "govrix-scout-cli"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "comfy-table",
+ "govrix-scout-common",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "govrix-scout-common"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "rust_decimal",
+ "rust_decimal_macros",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "toml",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "govrix-scout-proxy"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "bytes",
+ "chrono",
+ "govrix-scout-common",
+ "govrix-scout-store",
+ "hex",
+ "http",
+ "http-body-util",
+ "hyper",
+ "hyper-util",
+ "regex",
+ "reqwest",
+ "rust_decimal",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "sha2",
+ "thiserror",
+ "tokio",
+ "tower",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+]
+
+[[package]]
+name = "govrix-scout-reports"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "govrix-scout-common",
+ "minijinja",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "govrix-scout-store"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "govrix-scout-common",
+ "rust_decimal",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "uuid",
 ]
 
 [[package]]
