@@ -6,7 +6,7 @@ license.workspace = true
 description = "Govrix Scout command-line interface"
 
 [[bin]]
-name = "Govrix Scout"
+name = "govrix-scout-cli"
 path = "src/main.rs"
 
 [dependencies]

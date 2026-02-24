@@ -10,7 +10,7 @@ name = "govrix_scout_proxy"
 path = "src/lib.rs"
 
 [[bin]]
-name = "Govrix Scout"
+name = "govrix-scout"
 path = "src/main.rs"
 
 [dependencies]
