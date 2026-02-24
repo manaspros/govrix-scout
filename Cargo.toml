@@ -13,7 +13,7 @@ version = "0.1.0"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Govrix Scout Contributors"]
-repository = "https://github.com/Govrix Scout/Govrix Scout"
+repository = "https://github.com/manaspros/govrix-scout"
 rust-version = "1.75"
 
 [workspace.dependencies]
