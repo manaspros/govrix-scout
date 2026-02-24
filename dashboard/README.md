@@ -36,7 +36,7 @@ Make sure Scout is running before starting the dashboard:
 
 ```bash
 # In the scout repo root:
-cargo run --bin agentmesh-server
+cargo run --bin govrix-scout-server
 ```
 
 ## Production Build

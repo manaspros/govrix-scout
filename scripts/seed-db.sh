@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# AgentMesh — Direct DB seed script (inserts realistic demo data into TimescaleDB)
+# Govrix Scout — Direct DB seed script (inserts realistic demo data into TimescaleDB)
 # ──────────────────────────────────────────────────────────────────────────────
 # Usage: ./scripts/seed-db.sh
 #
@@ -32,13 +32,13 @@ COMPOSE_FILE="$ROOT_DIR/docker/docker-compose.yml"
 MIGRATIONS_DIR="$ROOT_DIR/migrations"
 
 # ── DB connection settings (match docker-compose.yml) ─────────────────────────
-CONTAINER="agentmesh-postgres"
-PG_USER="agentmesh"
-PG_DB="agentmesh"
-PG_PASS="agentmesh_dev"
+CONTAINER="govrix-scout-postgres"
+PG_USER="Govrix Scout"
+PG_DB="Govrix Scout"
+PG_PASS="govrix_scout_dev"
 
 echo ""
-echo -e "${BOLD}AgentMesh — Database Seed (Direct Insert)${NC}"
+echo -e "${BOLD}Govrix Scout — Database Seed (Direct Insert)${NC}"
 echo "────────────────────────────────────────────────────────────────"
 info "Project root:    $ROOT_DIR"
 info "Compose file:    $COMPOSE_FILE"
@@ -1028,6 +1028,6 @@ echo "  Agents API: http://localhost:4001/api/v1/agents"
 echo "  Costs API:  http://localhost:4001/api/v1/costs/summary"
 echo ""
 echo "  Quick verify:"
-echo "    docker exec agentmesh-postgres env PGPASSWORD=agentmesh_dev \\"
-echo "      psql -U agentmesh -d agentmesh -c 'SELECT COUNT(*) FROM events;'"
+echo "    docker exec govrix-scout-postgres env PGPASSWORD=govrix_scout_dev \\"
+echo "      psql -U Govrix Scout -d Govrix Scout -c 'SELECT COUNT(*) FROM events;'"
 echo "────────────────────────────────────────────────────────────────"

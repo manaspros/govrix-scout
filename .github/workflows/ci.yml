@@ -43,7 +43,7 @@ jobs:
           RUST_LOG: error
 
       - name: Build release binary
-        run: cargo build --release -p agentmesh-proxy
+        run: cargo build --release -p govrix-scout-proxy
 
   dashboard:
     name: Dashboard
@@ -94,7 +94,7 @@ jobs:
           push: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          tags: agentmesh-proxy:ci
+          tags: govrix-scout-proxy:ci
 
       - name: Build dashboard image (no push)
         uses: docker/build-push-action@v6
@@ -104,4 +104,4 @@ jobs:
           push: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          tags: agentmesh-dashboard:ci
+          tags: govrix-scout-dashboard:ci

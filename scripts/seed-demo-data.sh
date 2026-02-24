@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# AgentMesh — Seed demo data
+# Govrix Scout — Seed demo data
 # ──────────────────────────────────────────────────────────────────────────────
 # Usage: ./scripts/seed-demo-data.sh [PROXY_URL]
 #
-# Sends five synthetic OpenAI-format requests through the AgentMesh proxy.
+# Sends five synthetic OpenAI-format requests through the Govrix Scout proxy.
 # The proxy forwards them to the configured upstream (which will return a 401
 # or connection error since we use a fake API key). The proxy still captures
 # and stores the request events — so the dashboard will show real activity.
@@ -31,7 +31,7 @@ warn()    { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 error()   { echo -e "${RED}[ERROR]${NC} $*"; }
 
 echo ""
-echo "AgentMesh — Seeding demo data"
+echo "Govrix Scout — Seeding demo data"
 echo "────────────────────────────────────────────────────────────────"
 echo "Proxy:   $PROXY_URL"
 echo "API:     $API_URL"
@@ -60,8 +60,8 @@ send_openai_request() {
     HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
         -X POST "$OPENAI_ENDPOINT" \
         -H "Content-Type: application/json" \
-        -H "Authorization: Bearer sk-demo-fake-key-agentmesh-seed" \
-        -H "X-AgentMesh-Agent-Id: $agent_id" \
+        -H "Authorization: Bearer sk-demo-fake-key-govrix-scout-seed" \
+        -H "X-govrix-scout-Agent-Id: $agent_id" \
         -H "Agent-Name: $agent_name" \
         --max-time 15 \
         -d "{
@@ -93,9 +93,9 @@ send_anthropic_request() {
     HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
         -X POST "$ANTHROPIC_ENDPOINT" \
         -H "Content-Type: application/json" \
-        -H "x-api-key: sk-ant-demo-fake-key-agentmesh-seed" \
+        -H "x-api-key: sk-ant-demo-fake-key-govrix-scout-seed" \
         -H "anthropic-version: 2023-06-01" \
-        -H "X-AgentMesh-Agent-Id: $agent_id" \
+        -H "X-govrix-scout-Agent-Id: $agent_id" \
         -H "Agent-Name: $agent_name" \
         --max-time 15 \
         -d "{

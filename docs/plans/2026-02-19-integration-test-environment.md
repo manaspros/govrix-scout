@@ -57,13 +57,13 @@ Runs 15 scenarios sequentially. Each: setup → action → wait for flush → as
 - `docker-compose-test-scout.yml` — postgres + mock-upstream + scout-proxy + test-runner
 - `docker-compose-test-platform.yml` — postgres + mock-upstream + govrix-server + test-runner
 
-Key override: `AGENTMESH_PROXY__UPSTREAM_OPENAI=http://mock-upstream:9999` redirects proxy to mock.
+Key override: `Govrix Scout_PROXY__UPSTREAM_OPENAI=http://mock-upstream:9999` redirects proxy to mock.
 
 ---
 
 ## Critical Prerequisite
 
-**Parameterize upstream URLs.** Current `resolve_upstream_base()` in `agentmesh-proxy/src/proxy/upstream.rs` returns hardcoded `https://api.openai.com`. Must read from config instead. The config fields `upstream_openai` / `upstream_anthropic` already exist in `agentmesh.default.toml`.
+**Parameterize upstream URLs.** Current `resolve_upstream_base()` in `Govrix Scout-proxy/src/proxy/upstream.rs` returns hardcoded `https://api.openai.com`. Must read from config instead. The config fields `upstream_openai` / `upstream_anthropic` already exist in `Govrix Scout.default.toml`.
 
 ---
 

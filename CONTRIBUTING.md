@@ -1,6 +1,6 @@
-# Contributing to AgentMesh OSS
+# Contributing to Govrix Scout OSS
 
-Thank you for your interest in contributing. AgentMesh is Apache 2.0 licensed and welcomes contributions of all kinds — bug reports, documentation improvements, new features, and code reviews.
+Thank you for your interest in contributing. Govrix Scout is Apache 2.0 licensed and welcomes contributions of all kinds — bug reports, documentation improvements, new features, and code reviews.
 
 ## Table of Contents
 
@@ -31,8 +31,8 @@ Thank you for your interest in contributing. AgentMesh is Apache 2.0 licensed an
 ### First-time setup
 
 ```bash
-git clone https://github.com/agentmesh/agentmesh.git
-cd agentmesh
+git clone https://github.com/Govrix Scout/Govrix Scout.git
+cd Govrix Scout
 ./scripts/setup.sh
 ```
 
@@ -57,13 +57,13 @@ Copy `.env.example` to `.env` if it exists, or set these directly:
 
 ```bash
 # Required for the proxy to write events
-DATABASE_URL=postgres://agentmesh:agentmesh_dev@localhost:5432/agentmesh
+DATABASE_URL=postgres://Govrix Scout:govrix_scout_dev@localhost:5432/Govrix Scout
 
 # Optional — restrict API access
-AGENTMESH_API_KEY=dev-secret
+govrix_scout_API_KEY=dev-secret
 
 # Rust log verbosity
-RUST_LOG=agentmesh=debug,tower_http=info
+RUST_LOG=Govrix Scout=debug,tower_http=info
 ```
 
 ---
@@ -71,13 +71,13 @@ RUST_LOG=agentmesh=debug,tower_http=info
 ## Project Structure
 
 ```
-agentmesh/
+Govrix Scout/
 ├── crates/
-│   ├── agentmesh-common/       # Shared types: protocols, events, config, errors
-│   ├── agentmesh-store/        # Database layer: sqlx queries for events + agents
-│   ├── agentmesh-proxy/        # Proxy hot path (hyper) + REST API (axum) + policy engine
-│   ├── agentmesh-cli/          # CLI binary using clap
-│   └── agentmesh-reports/      # Report templates (minijinja) + PDF generation
+│   ├── govrix-scout-common/       # Shared types: protocols, events, config, errors
+│   ├── govrix-scout-store/        # Database layer: sqlx queries for events + agents
+│   ├── govrix-scout-proxy/        # Proxy hot path (hyper) + REST API (axum) + policy engine
+│   ├── govrix-scout-cli/          # CLI binary using clap
+│   └── govrix-scout-reports/      # Report templates (minijinja) + PDF generation
 ├── dashboard/                  # React 18 + TypeScript + Vite + Recharts
 ├── migrations/                 # SQL migration files (applied by docker-entrypoint-initdb.d)
 ├── config/                     # Default TOML configuration
@@ -89,11 +89,11 @@ agentmesh/
 
 ### Crate responsibilities
 
-- **agentmesh-common**: No I/O. Pure types, parsing, serialization, config loading.
-- **agentmesh-store**: All database access. No HTTP, no business logic.
-- **agentmesh-proxy**: Orchestrates everything. The `proxy/` module uses hyper (hot path). The `api/` module uses axum (management path). The `policy/` module is call-by-value, no async.
-- **agentmesh-cli**: Thin wrapper — parses args, calls store or API.
-- **agentmesh-reports**: Stateless template rendering. Takes data structs, returns bytes.
+- **govrix-scout-common**: No I/O. Pure types, parsing, serialization, config loading.
+- **govrix-scout-store**: All database access. No HTTP, no business logic.
+- **govrix-scout-proxy**: Orchestrates everything. The `proxy/` module uses hyper (hot path). The `api/` module uses axum (management path). The `policy/` module is call-by-value, no async.
+- **govrix-scout-cli**: Thin wrapper — parses args, calls store or API.
+- **govrix-scout-reports**: Stateless template rendering. Takes data structs, returns bytes.
 
 ---
 
@@ -323,7 +323,7 @@ What are the positive and negative consequences?
 
 ## Security
 
-Do not open a public GitHub issue for security vulnerabilities. Email `security@agentmesh.io` directly with:
+Do not open a public GitHub issue for security vulnerabilities. Email `security@Govrix Scout.io` directly with:
 
 - A description of the vulnerability
 - Steps to reproduce

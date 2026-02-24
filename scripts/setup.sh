@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# AgentMesh — First-time setup script
+# Govrix Scout — First-time setup script
 # ──────────────────────────────────────────────────────────────────────────────
 # Usage: ./scripts/setup.sh
 #
@@ -31,7 +31,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 
 echo ""
-echo -e "${BOLD}AgentMesh OSS — First-time setup${NC}"
+echo -e "${BOLD}Govrix Scout OSS — First-time setup${NC}"
 echo "────────────────────────────────────────────────────────────────"
 info "Project root: $ROOT_DIR"
 echo ""

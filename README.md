@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/AgentMesh-AI%20Agent%20Governance-8B5CF6?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiPjxwYXRoIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyem0tMiAxNWwtNS01IDEuNDEtMS40MUwxMCAxNC4xN2w3LjU5LTcuNTlMMTkgOGwtOSA5eiIvPjwvc3ZnPg==&logoColor=white" alt="AgentMesh" />
+  <img src="https://img.shields.io/badge/govrix-scout-AI%20Agent%20Governance-8B5CF6?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiPjxwYXRoIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyem0tMiAxNWwtNS01IDEuNDEtMS40MUwxMCAxNC4xN2w3LjU5LTcuNTlMMTkgOGwtOSA5eiIvPjwvc3ZnPg==&logoColor=white" alt="Govrix Scout" />
 </p>
 
-<h1 align="center">AgentMesh</h1>
+<h1 align="center">Govrix Scout</h1>
 
 <p align="center">
   <b>Know what your AI agents are doing. Before your auditor asks.</b>
@@ -48,16 +48,16 @@ Your company is deploying AI agents. Fast. But nobody can answer these questions
 
 > Every AI agent action in an enterprise should be as auditable as a financial transaction. Today, that infrastructure does not exist.
 
-**AgentMesh makes it exist.**
+**Govrix Scout makes it exist.**
 
 <br/>
 
-## What AgentMesh Does
+## What Govrix Scout Does
 
-AgentMesh is a **transparent proxy** that sits between your AI agents and their APIs. It captures every request and response — without touching a single line of your agent code.
+Govrix Scout is a **transparent proxy** that sits between your AI agents and their APIs. It captures every request and response — without touching a single line of your agent code.
 
 ```
-  Your Agent                   AgentMesh Proxy                    OpenAI / Anthropic
+  Your Agent                   Govrix Scout Proxy                    OpenAI / Anthropic
   ─────────                    ───────────────                    ──────────────────
        │                             │                                   │
        │  OPENAI_BASE_URL=           │                                   │
@@ -90,15 +90,15 @@ AgentMesh is a **transparent proxy** that sits between your AI agents and their 
 
 <br/>
 
-## Why AgentMesh — Not Just Another Logging Tool
+## Why Govrix Scout — Not Just Another Logging Tool
 
-| | Traditional Logging | APM Tools (Datadog, etc.) | **AgentMesh** |
+| | Traditional Logging | APM Tools (Datadog, etc.) | **Govrix Scout** |
 |---|---|---|---|
 | **Understands AI protocols** | No | Partially | **Yes** — parses OpenAI, Anthropic, MCP, A2A natively |
 | **Zero agent modification** | Requires SDK changes | Requires instrumentation | **One env var change** |
 | **Agent auto-discovery** | Manual inventory | Manual tagging | **Automatic** — discovers agents from traffic |
 | **Cost attribution** | DIY | Generic metrics | **Per-agent, per-model, per-request** |
-| **PII detection** | Not built-in | Add-on | **Pattern flagging** — detects patterns; masking available with [Govrix Platform](https://agentmesh.io) |
+| **PII detection** | Not built-in | Add-on | **Pattern flagging** — detects patterns; masking available with [Govrix Platform](https://Govrix Scout.io) |
 | **Compliance-ready audit trail** | No | No | **Yes** — cryptographic lineage hash chain |
 | **Latency overhead** | Varies | 10-50ms | **<5ms p99** |
 | **Self-hosted** | Depends | SaaS-only | **100% self-hosted, your data stays yours** |
@@ -114,8 +114,8 @@ AgentMesh is a **transparent proxy** that sits between your AI agents and their 
 ### 1. Clone and start
 
 ```bash
-git clone https://github.com/manaspros/agentmesh.git
-cd agentmesh
+git clone https://github.com/manaspros/Govrix Scout.git
+cd Govrix Scout
 docker compose -f docker/docker-compose.yml up -d
 ```
 
@@ -204,7 +204,7 @@ Know exactly where your AI spend is going — by agent, by model, by day. No mor
 
 ### PII Pattern Flagging
 
-AgentMesh flags sensitive data patterns in request and response payloads, logging their type and location so you know when PII flows through your agent traffic.
+Govrix Scout flags sensitive data patterns in request and response payloads, logging their type and location so you know when PII flows through your agent traffic.
 
 - **Email addresses** — `john.doe@company.com` → flagged in compliance tag
 - **Phone numbers** — US format patterns
@@ -212,7 +212,7 @@ AgentMesh flags sensitive data patterns in request and response payloads, loggin
 - **Credit card numbers** — Major card patterns (Luhn-eligible)
 - **IP addresses** — Internal network addresses in prompts
 
-> AgentMesh **detects and flags** PII patterns — it does not store the actual values. For **real-time PII masking and blocking** (redacting sensitive data before it reaches the upstream API), see [Govrix Platform](https://agentmesh.io).
+> Govrix Scout **detects and flags** PII patterns — it does not store the actual values. For **real-time PII masking and blocking** (redacting sensitive data before it reaches the upstream API), see [Govrix Platform](https://Govrix Scout.io).
 
 ### Tamper-Evident Audit Trail
 
@@ -246,7 +246,7 @@ This gives you a **cryptographically linked chain of evidence** showing exactly 
 │                          │                                       │
 │                ┌─────────▼──────────┐                            │
 │                │                    │    Rust / hyper + tokio     │
-│                │   AGENTMESH PROXY  │    <1ms p50 / <5ms p99     │
+│                │   Govrix Scout PROXY  │    <1ms p50 / <5ms p99     │
 │                │      :4000         │    Fail-open design        │
 │                │                    │                            │
 │                └──┬──────────────┬──┘                            │
@@ -297,7 +297,7 @@ The proxy is the **hot path** — every single AI request flows through it. We u
 - **<1ms p50 latency** — your agents won't notice it's there
 - **<5ms p99 latency** — even under load
 - **Zero garbage collection pauses** — predictable performance
-- **Fail-open design** — if AgentMesh has an internal error, your agent traffic continues uninterrupted
+- **Fail-open design** — if Govrix Scout has an internal error, your agent traffic continues uninterrupted
 
 The database write is **fire-and-forget** — sent to a bounded async channel, never awaited in the request path.
 
@@ -381,20 +381,17 @@ All endpoints on port `4001`. Responses follow `{"data": [...], "total": N}` for
 
 ## Configuration
 
-Default config at `config/agentmesh.default.toml`. Override anything with environment variables:
+Default config at `config/Govrix Scout.default.toml`. Override anything with environment variables:
 
 ```bash
 # Database
-AGENTMESH_STORE__DATABASE_URL=postgresql://user:pass@host:5432/agentmesh
-
-# Proxy
-AGENTMESH_PROXY__LISTEN_PORT=4000
-
-# API auth (optional — open by default for easy setup)
-AGENTMESH_API_KEY=amesh_live_your_secret_key_here
-
-# Logging
-RUST_LOG=agentmesh=info
+GOVRIX_STORE__DATABASE_URL=postgresql://user:pass@host:5432/Govrix Scout
+# Proxy listens here
+GOVRIX_PROXY__LISTEN_PORT=4000
+# Management API uses Bearer auth under /api/v1/*
+GOVRIX_API_KEY=amesh_live_your_secret_key_here
+# Filter telemetry output
+RUST_LOG=Govrix Scout=info
 ```
 
 <details>
@@ -416,7 +413,7 @@ base_url = "https://api.anthropic.com"
 timeout_seconds = 120
 
 [store]
-database_url = "postgresql://agentmesh:agentmesh@localhost:5432/agentmesh"
+database_url = "postgresql://Govrix Scout:Govrix Scout@localhost:5432/Govrix Scout"
 max_connections = 20
 retention_days = 7
 batch_size = 100
@@ -450,8 +447,8 @@ channel_capacity = 10000
 ### First-time setup
 
 ```bash
-git clone https://github.com/manaspros/agentmesh.git
-cd agentmesh
+git clone https://github.com/manaspros/Govrix Scout.git
+cd Govrix Scout
 ./scripts/setup.sh
 ```
 
@@ -518,7 +515,7 @@ make clean       # Remove artifacts
 </td>
 <td width="50%">
 
-### AgentMesh Answers All Five
+### Govrix Scout Answers All Five
 
 ```
 ✓ Agent auto-discovery
@@ -544,9 +541,9 @@ make clean       # Remove artifacts
 
 <br/>
 
-## AgentMesh Enterprise
+## Govrix Scout Enterprise
 
-The open-source core gives you full visibility. When you need **control**, AgentMesh Enterprise adds:
+The open-source core gives you full visibility. When you need **control**, Govrix Scout Enterprise adds:
 
 | Capability | What It Does |
 |------------|-------------|
@@ -558,9 +555,9 @@ The open-source core gives you full visibility. When you need **control**, Agent
 | **Unlimited scale** | No agent cap, no retention limit, multi-cluster federation, Kubernetes Helm charts |
 
 <p align="center">
-  <a href="https://agentmesh.io"><b>Learn more at agentmesh.io</b></a>
+  <a href="https://Govrix Scout.io"><b>Learn more at Govrix Scout.io</b></a>
   &nbsp;·&nbsp;
-  <a href="mailto:hello@agentmesh.io">Contact sales</a>
+  <a href="mailto:hello@Govrix Scout.io">Contact sales</a>
 </p>
 
 <br/>

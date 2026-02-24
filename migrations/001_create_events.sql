@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS events (
 );
 
 COMMENT ON TABLE events IS
-    'Core audit log: every agent request/response intercepted by the AgentMesh proxy.';
+    'Core audit log: every agent request/response intercepted by the Govrix Scout proxy.';
 COMMENT ON COLUMN events.session_id IS
     'Groups related requests in a single agent conversation session.';
 COMMENT ON COLUMN events.lineage_hash IS

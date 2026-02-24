@@ -1,19 +1,19 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/agentmesh-common",
-    "crates/agentmesh-store",
-    "crates/agentmesh-proxy",
-    "crates/agentmesh-cli",
-    "crates/agentmesh-reports",
+    "crates/govrix-scout-common",
+    "crates/govrix-scout-store",
+    "crates/govrix-scout-proxy",
+    "crates/govrix-scout-cli",
+    "crates/govrix-scout-reports",
 ]
 
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
 license = "Apache-2.0"
-authors = ["AgentMesh Contributors"]
-repository = "https://github.com/agentmesh/agentmesh"
+authors = ["Govrix Scout Contributors"]
+repository = "https://github.com/Govrix Scout/Govrix Scout"
 rust-version = "1.75"
 
 [workspace.dependencies]
@@ -68,8 +68,8 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 minijinja = "2"
 
 # Internal crates
-agentmesh-common = { path = "crates/agentmesh-common" }
-agentmesh-store = { path = "crates/agentmesh-store" }
+govrix-scout-common = { path = "crates/govrix-scout-common" }
+govrix-scout-store = { path = "crates/govrix-scout-store" }
 
 [profile.release]
 opt-level = 3
