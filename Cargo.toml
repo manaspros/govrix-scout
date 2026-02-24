@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/govrix-scout-common",
+    "crates/govrix-common",
     "crates/govrix-server",
     "crates/govrix-policy",
     "crates/govrix-identity",
@@ -14,10 +14,10 @@ edition = "2021"
 license = "LicenseRef-Proprietary"
 
 [workspace.dependencies]
-govrix-scout-common = { path = "../govrix-scout/crates/govrix-scout-common" }
-govrix-scout-proxy = { path = "../govrix-scout/crates/govrix-scout-proxy" }
-govrix-scout-store = { path = "../govrix-scout/crates/govrix-scout-store" }
-govrix-scout-common = { path = "crates/govrix-scout-common" }
+govrix-scout-common = { git = "https://github.com/manaspros/govrix-scout.git", branch = "chore/global-rebranding" }
+govrix-scout-proxy = { git = "https://github.com/manaspros/govrix-scout.git", branch = "chore/global-rebranding" }
+govrix-scout-store = { git = "https://github.com/manaspros/govrix-scout.git", branch = "chore/global-rebranding" }
+govrix-common = { path = "crates/govrix-common" }
 govrix-policy = { path = "crates/govrix-policy" }
 govrix-identity = { path = "crates/govrix-identity" }
 tokio = { version = "1", features = ["full"] }
