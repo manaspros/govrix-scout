@@ -1,0 +1,21 @@
+[package]
+name = "govrix-scout-store"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "PostgreSQL + TimescaleDB storage layer for Govrix Scout"
+
+[dependencies]
+govrix-scout-common = { workspace = true }
+sqlx = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+rust_decimal = { version = "1", features = ["serde-float"] }
+
+[dev-dependencies]
+tokio = { workspace = true }

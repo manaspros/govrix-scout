@@ -1,0 +1,70 @@
+[package]
+name = "govrix-scout-proxy"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Govrix Scout proxy — intercepts and observes AI agent traffic"
+
+[lib]
+name = "govrix_scout_proxy"
+path = "src/lib.rs"
+
+[[bin]]
+name = "govrix-scout"
+path = "src/main.rs"
+
+[dependencies]
+govrix-scout-common = { workspace = true }
+govrix-scout-store = { workspace = true }
+
+# Async runtime
+tokio = { workspace = true }
+
+# HTTP — hyper for hot path, axum for management API
+hyper = { workspace = true }
+hyper-util = { workspace = true }
+http-body-util = "0.1"
+axum = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+
+# Outbound HTTP (upstream calls)
+reqwest = { workspace = true, features = ["json", "stream", "rustls-tls"] }
+
+# HTTP types
+http = "1"
+
+# Bytes
+bytes = "1"
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = "0.9"
+
+# PII detection — compiled regex patterns
+regex = "1"
+
+# Error handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Observability
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+# UUIDs and time
+uuid = { workspace = true }
+chrono = { workspace = true }
+
+# SHA-256 for lineage hashing
+sha2 = { workspace = true }
+hex = { workspace = true }
+
+# Decimal arithmetic (used for cost aggregation in event writer)
+rust_decimal = { version = "1", features = ["serde-float"] }
+
+# Atomic counters for metrics (use standard library atomics, no extra dep needed)
+
+[dev-dependencies]
+tokio = { workspace = true }

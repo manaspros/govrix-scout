@@ -1,0 +1,91 @@
+version: '3.9'
+
+# ── Volumes ───────────────────────────────────────────────────────────────────
+volumes:
+  pgdata:
+    driver: local
+
+# ── Networks ──────────────────────────────────────────────────────────────────
+networks:
+  Govrix Scout:
+    driver: bridge
+
+# ── Services ──────────────────────────────────────────────────────────────────
+services:
+
+  # ── PostgreSQL + TimescaleDB ───────────────────────────────────────────────
+  postgres:
+    image: timescale/timescaledb:latest-pg16
+    container_name: govrix-scout-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: Govrix Scout
+      POSTGRES_USER: Govrix Scout
+      POSTGRES_PASSWORD: govrix_scout_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Run migrations on first start
+      - ../migrations:/docker-entrypoint-initdb.d:ro
+    networks:
+      - Govrix Scout
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U Govrix Scout -d Govrix Scout"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ── Govrix Scout Proxy + API ──────────────────────────────────────────────────
+  proxy:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: govrix-scout-proxy
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      GOVRIX_DATABASE__URL: postgres://Govrix Scout:govrix_scout_dev@postgres:5432/Govrix Scout
+      GOVRIX_DATABASE__MAX_CONNECTIONS: "20"
+      GOVRIX_DATABASE__MIN_CONNECTIONS: "2"
+      GOVRIX_PROXY__LISTEN_ADDR: "0.0.0.0:4000"
+      GOVRIX_API__LISTEN_ADDR: "0.0.0.0:4001"
+      GOVRIX_METRICS__LISTEN_ADDR: "0.0.0.0:9090"
+      GOVRIX_LOG: "Govrix Scout=info,tower_http=debug"
+      RUST_LOG: "Govrix Scout=info"
+    ports:
+      - "4000:4000"   # Proxy (hot path)
+      - "4001:4001"   # REST API
+      - "9090:9090"   # Prometheus metrics
+    networks:
+      - Govrix Scout
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:4001/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  # ── React Dashboard (nginx) ────────────────────────────────────────────────
+  dashboard:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dashboard
+    container_name: govrix-scout-dashboard
+    restart: unless-stopped
+    depends_on:
+      proxy:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    networks:
+      - Govrix Scout
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

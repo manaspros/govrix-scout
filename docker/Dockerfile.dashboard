@@ -1,0 +1,57 @@
+# AgentMesh Dashboard — Node build + nginx serve
+# ──────────────────────────────────────────────────────────────────────────────
+# Stage 1: Build React app with pnpm
+# Stage 2: Serve with nginx:alpine
+# ──────────────────────────────────────────────────────────────────────────────
+
+# ── Stage 1: Build ────────────────────────────────────────────────────────────
+FROM node:20-alpine AS builder
+
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+WORKDIR /app
+
+# Cache node_modules
+COPY dashboard/package.json dashboard/pnpm-lock.yaml* ./
+RUN pnpm install --frozen-lockfile
+
+# Copy source and build
+COPY dashboard/ ./
+RUN pnpm build
+
+# ── Stage 2: Serve ────────────────────────────────────────────────────────────
+FROM nginx:alpine AS runtime
+
+# Copy built assets
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# nginx config for SPA routing
+RUN cat > /etc/nginx/conf.d/default.conf << 'EOF'
+server {
+    listen 3000;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # API proxy to agentmesh backend
+    location /api/ {
+        proxy_pass http://proxy:4001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    location /health {
+        proxy_pass http://proxy:4001/health;
+    }
+
+    # SPA fallback — all routes serve index.html
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+EOF
+
+EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=5s \
+    CMD wget -q --spider http://localhost:3000 || exit 1

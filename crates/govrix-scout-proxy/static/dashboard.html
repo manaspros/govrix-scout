@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Govrix Scout Dashboard</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f0f0f; color: #e0e0e0; padding: 24px; }
+h1 { font-size: 20px; font-weight: 600; margin-bottom: 16px; color: #fff; }
+h2 { font-size: 14px; font-weight: 600; margin: 24px 0 8px; color: #aaa; text-transform: uppercase; letter-spacing: 0.05em; }
+.status-bar { display: flex; gap: 24px; background: #1a1a1a; border-radius: 8px; padding: 12px 16px; margin-bottom: 24px; border: 1px solid #2a2a2a; }
+.stat { display: flex; flex-direction: column; }
+.stat-label { font-size: 11px; color: #666; text-transform: uppercase; }
+.stat-value { font-size: 18px; font-weight: 600; color: #4ade80; }
+table { width: 100%; border-collapse: collapse; background: #1a1a1a; border-radius: 8px; overflow: hidden; border: 1px solid #2a2a2a; }
+th { text-align: left; padding: 8px 12px; font-size: 11px; text-transform: uppercase; color: #666; border-bottom: 1px solid #2a2a2a; }
+td { padding: 8px 12px; font-size: 13px; border-bottom: 1px solid #1f1f1f; font-family: monospace; }
+tr:last-child td { border-bottom: none; }
+.badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; }
+.badge-active { background: #14532d; color: #4ade80; }
+.badge-in { background: #1e3a5f; color: #60a5fa; }
+.badge-out { background: #3b1f1f; color: #f87171; }
+#refresh-indicator { font-size: 11px; color: #555; margin-left: auto; }
+</style>
+</head>
+<body>
+<h1>Govrix Scout <span id="refresh-indicator">refreshing...</span></h1>
+<div class="status-bar">
+  <div class="stat"><span class="stat-label">Status</span><span class="stat-value" id="status">-</span></div>
+  <div class="stat"><span class="stat-label">Version</span><span class="stat-value" id="version" style="font-size:14px">-</span></div>
+  <div class="stat"><span class="stat-label">Agents</span><span class="stat-value" id="agent-count">-</span></div>
+  <div class="stat"><span class="stat-label">Events</span><span class="stat-value" id="event-count">-</span></div>
+</div>
+<h2>Agents</h2>
+<table><thead><tr><th>ID</th><th>Name</th><th>Status</th><th>Requests</th></tr></thead>
+<tbody id="agents-body"><tr><td colspan="4" style="color:#555">Loading...</td></tr></tbody></table>
+<h2>Recent Events</h2>
+<table><thead><tr><th>Time</th><th>Agent</th><th>Direction</th><th>Provider</th><th>Status</th></tr></thead>
+<tbody id="events-body"><tr><td colspan="5" style="color:#555">Loading...</td></tr></tbody></table>
+<script>
+const BASE = '';
+async function renderAgents(agents) {
+  var tbody = document.getElementById('agents-body');
+  tbody.replaceChildren();
+  if (!Array.isArray(agents) || !agents.length) {
+    var tr = document.createElement('tr');
+    var td = document.createElement('td');
+    td.setAttribute('colspan', '4');
+    td.style.color = '#555';
+    td.textContent = 'No agents registered';
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+  agents.forEach(function(a) {
+    var tr = document.createElement('tr');
+    var tdId = document.createElement('td'); tdId.textContent = (a.id||'').slice(0,8); tr.appendChild(tdId);
+    var tdName = document.createElement('td'); tdName.textContent = a.name||'-'; tr.appendChild(tdName);
+    var tdStatus = document.createElement('td');
+    var badge = document.createElement('span'); badge.className = 'badge badge-active'; badge.textContent = a.status||'active';
+    tdStatus.appendChild(badge); tr.appendChild(tdStatus);
+    var tdReq = document.createElement('td'); tdReq.textContent = a.total_requests||0; tr.appendChild(tdReq);
+    tbody.appendChild(tr);
+  });
+}
+async function renderEvents(events) {
+  var tbody = document.getElementById('events-body');
+  tbody.replaceChildren();
+  if (!Array.isArray(events) || !events.length) {
+    var tr = document.createElement('tr');
+    var td = document.createElement('td');
+    td.setAttribute('colspan', '5');
+    td.style.color = '#555';
+    td.textContent = 'No events recorded';
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+  events.forEach(function(e) {
+    var tr = document.createElement('tr');
+    var tdTime = document.createElement('td'); tdTime.textContent = new Date(e.timestamp||e.created_at||Date.now()).toLocaleTimeString(); tr.appendChild(tdTime);
+    var tdAgent = document.createElement('td'); tdAgent.textContent = (e.agent_id||'-').slice(0,12); tr.appendChild(tdAgent);
+    var tdDir = document.createElement('td');
+    var badge = document.createElement('span');
+    badge.className = 'badge ' + (e.direction==='inbound' ? 'badge-in' : 'badge-out');
+    badge.textContent = e.direction||'-';
+    tdDir.appendChild(badge); tr.appendChild(tdDir);
+    var tdProv = document.createElement('td'); tdProv.textContent = e.provider||'-'; tr.appendChild(tdProv);
+    var tdSt = document.createElement('td'); tdSt.textContent = e.status_code||'-'; tr.appendChild(tdSt);
+    tbody.appendChild(tr);
+  });
+}
+async function load() {
+  try {
+    var results = await Promise.all([
+      fetch(BASE + '/health').then(function(r){ return r.json(); }).catch(function(){ return {}; }),
+      fetch(BASE + '/api/v1/agents').then(function(r){ return r.json(); }).catch(function(){ return []; }),
+      fetch(BASE + '/api/v1/events?limit=50').then(function(r){ return r.json(); }).catch(function(){ return []; }),
+    ]);
+    var health = results[0]; var agents = results[1]; var events = results[2];
+    document.getElementById('status').textContent = health.status || 'unknown';
+    document.getElementById('version').textContent = health.version || '-';
+    document.getElementById('agent-count').textContent = Array.isArray(agents) ? agents.length : '-';
+    document.getElementById('event-count').textContent = Array.isArray(events) ? events.length : '-';
+    renderAgents(agents);
+    renderEvents(events);
+    document.getElementById('refresh-indicator').textContent = 'updated ' + new Date().toLocaleTimeString();
+  } catch(err) { document.getElementById('refresh-indicator').textContent = 'error: ' + err.message; }
+}
+load();
+setInterval(load, 5000);
+</script>
+</body>
+</html>

@@ -1,0 +1,111 @@
+# Govrix Scout Default Configuration
+# ──────────────────────────────────────────────────────────────────────────────
+# All values here are defaults. Override via:
+#   1. A custom config file: GOVRIX_CONFIG=/path/to/config.toml
+#   2. Environment variables: GOVRIX_<SECTION>_<KEY> (e.g. GOVRIX_DATABASE_URL)
+#
+# Environment variables always take precedence over this file.
+# ──────────────────────────────────────────────────────────────────────────────
+
+# ── Proxy ─────────────────────────────────────────────────────────────────────
+[proxy]
+# Port the transparent proxy listens on.
+# Agents connect to this port by setting their API base URL to http://localhost:4000/proxy/<provider>/v1
+port = 4000
+
+# Bind address. Use "0.0.0.0" to accept connections from all interfaces.
+bind = "0.0.0.0"
+
+# Maximum request body size (in bytes) to read and tee for analysis.
+# Requests larger than this are forwarded but not analyzed.
+# Default: 1 MiB (1_048_576 bytes)
+max_body_tee_bytes = 1048576
+
+# Fail-open design: if any internal operation fails (analysis, DB write, etc.),
+# traffic is still forwarded. Set to false to enable strict mode (not recommended).
+fail_open = true
+
+# Upstream connection timeout in milliseconds.
+# Requests that take longer than this will be aborted.
+upstream_timeout_ms = 30000
+
+# Upstream base URLs for each provider.
+# These can be overridden to point to local mocks or alternative providers.
+upstream_openai = "https://api.openai.com"
+upstream_anthropic = "https://api.anthropic.com"
+
+# ── Database ──────────────────────────────────────────────────────────────────
+[database]
+# PostgreSQL connection URL.
+# IMPORTANT: In production, use the GOVRIX_DATABASE_URL environment variable
+# instead of storing credentials in this file.
+url = "postgres://Govrix Scout:Govrix Scout@localhost:5432/Govrix Scout"
+
+# Connection pool settings.
+max_connections = 20
+min_connections = 2
+
+# How long to wait for a connection from the pool (seconds).
+connect_timeout_secs = 10
+
+# ── Management API ────────────────────────────────────────────────────────────
+[api]
+# Port for the REST API (used by dashboard and CLI).
+port = 4001
+
+# Bind address.
+bind = "0.0.0.0"
+
+# Enable CORS for dashboard access.
+cors_enabled = true
+
+# Allowed CORS origins. Restrict to specific origins in production.
+cors_origins = ["http://localhost:3000"]
+
+# ── Dashboard ─────────────────────────────────────────────────────────────────
+[dashboard]
+# Port the React dashboard is served on.
+# In development, this is the Vite dev server.
+# In production, this is the nginx container.
+port = 3000
+
+# ── Data Retention ────────────────────────────────────────────────────────────
+[retention]
+# Number of days to retain event data in TimescaleDB.
+# Default: 7 days. Govrix Scout OSS soft limit.
+# Govrix Scout Enterprise supports unlimited retention.
+events_days = 7
+
+# Number of days to retain cost aggregation data.
+cost_days = 90
+
+# ── Telemetry / Observability ─────────────────────────────────────────────────
+[telemetry]
+# Log level: trace | debug | info | warn | error
+# Override with GOVRIX_LOG_LEVEL environment variable.
+log_level = "info"
+
+# Enable Prometheus metrics endpoint at GET /metrics
+prometheus_enabled = true
+
+# Port for Prometheus scraping (separate from the management API port).
+prometheus_port = 9090
+
+# ── Agent Registration ────────────────────────────────────────────────────────
+# [agents]
+# Soft limit on the number of agents tracked in OSS.
+# When exceeded, a warning is logged. No hard blocking.
+# Govrix Scout Enterprise removes this limit.
+# max_agents = 25
+
+# ── Proxy Route Configuration ─────────────────────────────────────────────────
+# To proxy to OpenAI:      set OPENAI_BASE_URL=http://localhost:4000/proxy/openai/v1
+# To proxy to Anthropic:   set ANTHROPIC_BASE_URL=http://localhost:4000/proxy/anthropic/v1
+# To proxy to MCP servers: configure your MCP client to use http://localhost:4000/proxy/mcp/<server>/
+#
+# Agent identification (in priority order):
+#   1. X-govrix-scout-Agent-Id header  — explicit agent ID
+#   2. Agent-Name header            — human-readable name
+#   3. API key suffix mapping       — last 8 chars of Authorization token
+#   4. Source IP address            — ip:<address>
+#   5. "unknown"                    — last resort
