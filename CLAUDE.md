@@ -136,6 +136,17 @@ RUST_LOG=govrix_scout_proxy=info
 
 ---
 
+## NEVER Commit to OSS Repo
+
+- **NO docs, context files, session logs, or strategy docs** in govrix-scout ever
+- All product docs, roadmaps, session logs, and analysis live in the **enterprise `govrix` repo** only:
+  - `govrix/.context/SCOUT_MEMORY.md`
+  - `govrix/.context/SCOUT_SESSION_LOG.md`
+  - `govrix/Docs/govrix-scout/`
+- This repo is public — anything committed here is visible to everyone
+
+---
+
 ## Code Standards
 
 - Rust: `clippy` + `rustfmt` — no warnings
