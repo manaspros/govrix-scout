@@ -28,3 +28,5 @@ pgdata/
 # Misc
 *.log
 *.pid
+.linux-build/
+.worktrees/
