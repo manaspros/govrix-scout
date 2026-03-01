@@ -70,9 +70,9 @@ check: ## Run cargo check (fast compile check)
 	$(CARGO) check --workspace
 
 # ── Database ──────────────────────────────────────────────────────────────────
-migrate: ## Run database migrations
-	@echo "==> Running migrations..."
-	@for f in migrations/*.sql; do \
+migrate: ## Run database init SQL
+	@echo "==> Running init SQL..."
+	@for f in init/*.sql; do \
 		echo "  Applying $$f..."; \
 		psql "$$DATABASE_URL" -f "$$f"; \
 	done

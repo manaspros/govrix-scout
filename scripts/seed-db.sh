@@ -29,7 +29,7 @@ error()   { echo -e "${RED}[ERROR]${NC} $*"; exit 1; }
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 COMPOSE_FILE="$ROOT_DIR/docker/docker-compose.yml"
-MIGRATIONS_DIR="$ROOT_DIR/migrations"
+MIGRATIONS_DIR="$ROOT_DIR/init"
 
 # ── DB connection settings (match docker-compose.yml) ─────────────────────────
 CONTAINER="govrix-scout-postgres"

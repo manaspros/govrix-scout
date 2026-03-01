@@ -75,7 +75,7 @@ govrix-scout/
 │   └── govrix-scout-reports/  # PDF + JSON report generation
 ├── dashboard/                 # React 18 + TypeScript + Vite + Tailwind CSS
 ├── docker/                    # docker-compose.yml, Dockerfile, nginx.conf
-├── migrations/                # 5 SQL files (idempotent)
+├── init/                # 5 SQL files (idempotent)
 ├── config/                    # govrix.default.toml, policies.example.yaml
 └── scripts/                   # setup.sh, verify.sh
 ```

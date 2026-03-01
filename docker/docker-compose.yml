@@ -26,8 +26,8 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      # Run migrations on first start
-      - ../migrations:/docker-entrypoint-initdb.d:ro
+      # Run init SQL on first start
+      - ../init:/docker-entrypoint-initdb.d:ro
     networks:
       - govrix-scout
     healthcheck:
