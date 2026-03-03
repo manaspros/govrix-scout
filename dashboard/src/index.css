@@ -22,6 +22,10 @@
     font-family: 'JetBrains Mono', monospace;
   }
 
+  /* Both classes are self-sufficient — applied exclusively (not combined).
+     Layout declarations (flex items-center gap-3 px-3 py-2 text-sm rounded-lg)
+     are intentionally duplicated so each class works as a standalone nav link
+     state without requiring the other to be present. */
   .sidebar-item {
     @apply flex items-center gap-3 px-3 py-2 text-slate-500 hover:text-primary hover:bg-indigo-50/60 transition-colors text-sm font-medium rounded-lg;
   }
@@ -141,11 +145,11 @@ html.dark .btn-secondary:hover {
 
 /* Sidebar */
 html.dark .sidebar-item {
-  color: var(--dk-text-md);
+  color: var(--dk-text-md) !important;
 }
 html.dark .sidebar-item:hover {
-  color: var(--dk-accent);
-  background-color: rgba(124,127,250,0.08);
+  color: var(--dk-accent) !important;
+  background-color: rgba(124,127,250,0.08) !important;
 }
 html.dark .sidebar-item-active {
   background-color: rgba(124,127,250,0.12) !important;
