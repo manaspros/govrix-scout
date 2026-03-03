@@ -1,55 +1,146 @@
+import React from 'react'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
+import { Bot, RefreshCw } from 'lucide-react'
 import { useAgents, useRetireAgent } from '../api/hooks'
-import StatusBadge from '../components/common/StatusBadge'
-import LoadingState from '../components/common/LoadingState'
-import EmptyState from '../components/common/EmptyState'
+
+const fmtNum = (n: number | undefined | null): string =>
+  typeof n === 'number' ? n.toLocaleString() : '0'
+
+const fmtUsd = (n: number | undefined | null): string =>
+  typeof n === 'number' ? `$${n.toFixed(4)}` : '$0'
+
+const statusColor = (s: string | undefined): string => {
+  const map: Record<string, string> = {
+    active: 'badge-success',
+    idle: 'badge-neutral',
+    error: 'badge-danger',
+    blocked: 'badge-danger',
+    retired: 'badge-neutral',
+  }
+  return map[s ?? ''] || 'badge-neutral'
+}
 
 export default function AgentsPage() {
-  const { data, isLoading } = useAgents()
-  const retire = useRetireAgent()
+  const { data, isLoading, refetch } = useAgents()
+  const retireAgent = useRetireAgent()
 
-  if (isLoading) return <LoadingState />
+  const agents = data?.data ?? []
+
+  // Bar chart data — top agents by requests
+  const chartData = [...agents]
+    .sort((a, b) => (b.total_requests || 0) - (a.total_requests || 0))
+    .slice(0, 10)
+    .map(a => ({
+      name: a.id?.slice(0, 16) || 'unknown',
+      requests: a.total_requests || 0,
+      cost: a.total_cost_usd || 0,
+    }))
 
   return (
-    <div className="card overflow-hidden">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-          Agent Registry <span className="text-slate-400 font-normal ml-1">({data?.total ?? 0} agents)</span>
-        </h2>
-      </div>
-      {!data?.data.length ? (
-        <EmptyState message="No agents registered yet — agents appear automatically on first request" />
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+    <div className="flex-1 overflow-y-auto p-6">
+      <div className="max-w-[1400px] mx-auto space-y-4">
+
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">Agents</h2>
+            <p className="text-xs text-slate-400">
+              {agents.length} agent{agents.length !== 1 ? 's' : ''} discovered
+            </p>
+          </div>
+          <button
+            onClick={() => refetch()}
+            className="btn-secondary flex items-center gap-1.5 text-xs"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
+
+        {/* Top Agents Chart */}
+        {chartData.length > 0 && (
+          <div className="bg-white border border-slate-200 rounded-xl p-5">
+            <h3 className="text-sm font-bold text-slate-700 mb-4">Top Agents by Requests</h3>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 10, fill: '#94a3b8' }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{ fontSize: 10, fill: '#94a3b8' }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={50}
+                />
+                <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8 }} />
+                <Bar dataKey="requests" fill="#6366f1" radius={[4, 4, 0, 0]} name="Requests" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
+        {/* Agent Table */}
+        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+          <table className="w-full">
             <thead>
-              <tr className="text-left text-xs text-slate-500 border-b border-slate-100 dark:border-slate-800">
-                {['Name / ID', 'Status', 'Requests', 'Cost (USD)', 'Tokens', 'Last Seen', 'Actions'].map(h => (
-                  <th key={h} className="pb-2 px-3 font-medium">{h}</th>
-                ))}
+              <tr className="border-b border-slate-100 bg-slate-50/50">
+                <th className="table-header text-left py-3 px-4">Agent ID</th>
+                <th className="table-header text-left py-3 px-4">Name</th>
+                <th className="table-header text-center py-3 px-4">Status</th>
+                <th className="table-header text-right py-3 px-4">Requests</th>
+                <th className="table-header text-right py-3 px-4">Tokens In</th>
+                <th className="table-header text-right py-3 px-4">Tokens Out</th>
+                <th className="table-header text-right py-3 px-4">Cost</th>
+                <th className="table-header text-left py-3 px-4">Last Seen</th>
+                <th className="table-header text-center py-3 px-4">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50 dark:divide-slate-800/30">
-              {data.data.map(agent => (
-                <tr key={agent.id} className="hover:bg-slate-50 dark:hover:bg-[#1a1a2e]/50">
-                  <td className="py-3 px-3">
-                    <p className="font-medium text-slate-900 dark:text-slate-100">{agent.name}</p>
-                    <p className="text-xs text-slate-400 font-mono">{agent.id.slice(0, 12)}</p>
+            <tbody>
+              {agents.map((a, i) => (
+                <tr
+                  key={a.id || i}
+                  className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors"
+                >
+                  <td className="table-cell text-xs font-medium text-primary max-w-[180px] truncate">
+                    {a.id || '—'}
                   </td>
-                  <td className="py-3 px-3"><StatusBadge status={agent.status} /></td>
-                  <td className="py-3 px-3 text-slate-600 dark:text-slate-400">{agent.total_requests.toLocaleString()}</td>
-                  <td className="py-3 px-3 text-slate-600 dark:text-slate-400">${agent.total_cost_usd.toFixed(4)}</td>
-                  <td className="py-3 px-3 text-slate-500 text-xs">
-                    {(agent.total_input_tokens + agent.total_output_tokens).toLocaleString()}
+                  <td className="table-cell text-xs text-slate-500">{a.name || '—'}</td>
+                  <td className="table-cell text-center">
+                    <span className={`badge ${statusColor(a.status)}`}>
+                      {a.status || 'unknown'}
+                    </span>
                   </td>
-                  <td className="py-3 px-3 text-xs text-slate-400">
-                    {new Date(agent.last_seen).toLocaleDateString()}
+                  <td className="table-cell text-xs metric-font text-right">
+                    {fmtNum(a.total_requests)}
                   </td>
-                  <td className="py-3 px-3">
-                    {agent.status === 'active' && (
+                  <td className="table-cell text-xs metric-font text-right">
+                    {fmtNum(a.total_input_tokens)}
+                  </td>
+                  <td className="table-cell text-xs metric-font text-right">
+                    {fmtNum(a.total_output_tokens)}
+                  </td>
+                  <td className="table-cell text-xs metric-font text-right text-slate-600">
+                    {fmtUsd(a.total_cost_usd)}
+                  </td>
+                  <td className="table-cell text-xs text-slate-400">
+                    {a.last_seen
+                      ? new Date(a.last_seen).toLocaleString([], {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })
+                      : '—'}
+                  </td>
+                  <td className="table-cell text-center">
+                    {a.status === 'active' && (
                       <button
-                        onClick={() => retire.mutate(agent.id)}
-                        disabled={retire.isPending}
-                        className="text-xs text-red-500 hover:text-red-700 disabled:opacity-40"
+                        onClick={() => retireAgent.mutate(a.id)}
+                        disabled={retireAgent.isPending}
+                        className="text-xs text-red-500 hover:text-red-700 font-medium disabled:opacity-40 transition-colors"
                       >
                         Retire
                       </button>
@@ -59,8 +150,19 @@ export default function AgentsPage() {
               ))}
             </tbody>
           </table>
+
+          {agents.length === 0 && !isLoading && (
+            <div className="text-center py-12 text-slate-400">
+              <Bot className="w-10 h-10 mx-auto mb-3 text-slate-300" />
+              <p className="text-sm font-medium">No agents discovered yet</p>
+              <p className="text-xs mt-1">
+                Agents are auto-registered when they send requests through the proxy
+              </p>
+            </div>
+          )}
         </div>
-      )}
+
+      </div>
     </div>
   )
 }
