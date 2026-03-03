@@ -40,7 +40,7 @@ export const getHealth = () => request<HealthResponse>('/health')
 
 // Events
 export const getEvents = (filters: EventFilters = {}) =>
-  request<PaginatedResponse<AgentEvent>>(`/api/v1/events${buildParams(filters)}`)
+  request<PaginatedResponse<AgentEvent>>(`/api/v1/events${buildParams(filters as QueryParams)}`)
 export const getEvent = (id: string) =>
   request<AgentEvent>(`/api/v1/events/${id}`)
 export const getSessionEvents = (sessionId: string) =>
@@ -56,7 +56,7 @@ export const updateAgent = (id: string, body: Partial<Pick<Agent, 'name' | 'stat
 export const retireAgent = (id: string) =>
   request<void>(`/api/v1/agents/${id}/retire`, { method: 'POST' })
 export const getAgentEvents = (id: string, filters: EventFilters = {}) =>
-  request<PaginatedResponse<AgentEvent>>(`/api/v1/agents/${id}/events${buildParams(filters)}`)
+  request<PaginatedResponse<AgentEvent>>(`/api/v1/agents/${id}/events${buildParams(filters as QueryParams)}`)
 
 // Costs
 export const getCostSummary = () =>

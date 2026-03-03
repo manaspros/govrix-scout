@@ -151,7 +151,8 @@ pub async fn log_request_event(ctx: &RequestContext, state: &InterceptorState) {
     // Parse request-specific fields
     match &ctx.protocol {
         Protocol::OpenAI { .. } => {
-            if let Some(req) = govrix_scout_common::protocols::openai::parse_request(&ctx.request_body)
+            if let Some(req) =
+                govrix_scout_common::protocols::openai::parse_request(&ctx.request_body)
             {
                 event.model = Some(req.model);
                 // Count tools defined in the request
@@ -172,7 +173,8 @@ pub async fn log_request_event(ctx: &RequestContext, state: &InterceptorState) {
             }
         }
         Protocol::Mcp { server, .. } => {
-            if let Some(req) = govrix_scout_common::protocols::mcp::parse_request(&ctx.request_body) {
+            if let Some(req) = govrix_scout_common::protocols::mcp::parse_request(&ctx.request_body)
+            {
                 let tool = govrix_scout_common::protocols::mcp::extract_tool_name(&req);
                 event.tags = serde_json::json!({
                     "mcp_server": server,
@@ -244,7 +246,8 @@ pub async fn log_response_event(
             if *streaming {
                 // For streaming, body is the accumulated SSE chunks
                 let data_lines = crate::proxy::streaming::parse_sse_data_lines(response_body);
-                let acc = govrix_scout_common::protocols::openai::parse_streaming_chunks(&data_lines);
+                let acc =
+                    govrix_scout_common::protocols::openai::parse_streaming_chunks(&data_lines);
                 event.model = acc.model.or_else(|| {
                     govrix_scout_common::protocols::openai::parse_model(&ctx.request_body)
                 });
@@ -304,7 +307,8 @@ pub async fn log_response_event(
     // Estimate cost from token usage
     if let (Some(input), Some(output)) = (event.input_tokens, event.output_tokens) {
         if let Some(ref model_name) = event.model {
-            if let Some(pricing) = govrix_scout_common::models::pricing::lookup_pricing(model_name) {
+            if let Some(pricing) = govrix_scout_common::models::pricing::lookup_pricing(model_name)
+            {
                 event.cost_usd = Some(pricing.estimate_cost(input, output));
             }
         }
@@ -319,7 +323,9 @@ pub async fn log_response_event(
         .cost_usd
         .and_then(|d| rust_decimal::prelude::ToPrimitive::to_f64(&d))
         .unwrap_or(0.0);
-    state.policy_hook.record_usage(&ctx.agent_id, tokens, cost, state.db_pool.clone());
+    state
+        .policy_hook
+        .record_usage(&ctx.agent_id, tokens, cost, state.db_pool.clone());
 
     // Update session lineage
     {

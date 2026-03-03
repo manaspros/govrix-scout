@@ -159,19 +159,30 @@ mod tests {
     /// correctly by callers that treat it as (0, 0.0).
     #[test]
     fn none_budget_means_zero() {
-        let result: Option<(i64, f64)> = None;
-        let (tokens, cost) = result.unwrap_or((0, 0.0));
+        // Simulate get_budget_today returning None (no row exists yet)
+        fn mock_get_budget(has_row: bool) -> Option<(i64, f64)> {
+            if has_row {
+                Some((50, 1.0))
+            } else {
+                None
+            }
+        }
+        let (tokens, cost) = mock_get_budget(false).unwrap_or((0, 0.0));
         assert_eq!(tokens, 0);
         assert_eq!(cost, 0.0);
+        // Also verify the Some path works correctly
+        let (tokens2, cost2) = mock_get_budget(true).unwrap_or((0, 0.0));
+        assert_eq!(tokens2, 50);
+        assert_eq!(cost2, 1.0);
     }
 
     /// Verify the global aggregation logic: sum over a simulated set of rows.
     #[test]
     fn global_total_sums_all_agents() {
         let rows: Vec<(i64, f64)> = vec![(100, 1.5), (200, 2.5), (50, 0.75)];
-        let (total_tokens, total_cost) = rows.iter().fold((0i64, 0.0f64), |(t, c), (tok, cst)| {
-            (t + tok, c + cst)
-        });
+        let (total_tokens, total_cost) = rows
+            .iter()
+            .fold((0i64, 0.0f64), |(t, c), (tok, cst)| (t + tok, c + cst));
         assert_eq!(total_tokens, 350);
         assert!((total_cost - 4.75).abs() < 1e-9);
     }

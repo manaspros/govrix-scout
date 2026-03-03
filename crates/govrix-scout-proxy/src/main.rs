@@ -27,14 +27,13 @@ async fn main() -> anyhow::Result<()> {
     // ── Logging ───────────────────────────────────────────────────────────────
     tracing_subscriber::fmt()
         .with_env_filter(
-            EnvFilter::try_from_env("GOVRIX_LOG_LEVEL")
-                .unwrap_or_else(|_| EnvFilter::new("info")),
+            EnvFilter::try_from_env("GOVRIX_LOG_LEVEL").unwrap_or_else(|_| EnvFilter::new("info")),
         )
         .init();
 
     // ── Configuration ─────────────────────────────────────────────────────────
-    let config_path = std::env::var("GOVRIX_CONFIG")
-        .unwrap_or_else(|_| "config/govrix.default.toml".to_string());
+    let config_path =
+        std::env::var("GOVRIX_CONFIG").unwrap_or_else(|_| "config/govrix.default.toml".to_string());
     let config = Config::load_or_default(&config_path);
 
     tracing::info!(

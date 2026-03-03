@@ -46,10 +46,7 @@ mod tests {
 
     #[test]
     fn svg_bar_chart_returns_svg_element() {
-        let data = vec![
-            ("agent1".to_string(), 100.0),
-            ("agent2".to_string(), 200.0),
-        ];
+        let data = vec![("agent1".to_string(), 100.0), ("agent2".to_string(), 200.0)];
         let svg = svg_bar_chart(&data, 400, 200);
         assert!(svg.starts_with("<svg"), "expected SVG element, got: {svg}");
         assert!(svg.contains("</svg>"));

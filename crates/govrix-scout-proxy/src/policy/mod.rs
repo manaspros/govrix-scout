@@ -72,7 +72,14 @@ pub trait PolicyHook: Send + Sync {
     /// persist the delta to the database (fire-and-forget, non-blocking).
     ///
     /// Default: no-op (used by `NoOpPolicy` and other non-budget hooks).
-    fn record_usage(&self, _agent_id: &str, _tokens: u64, _cost_usd: f64, _pool: Option<govrix_scout_store::StorePool>) {}
+    fn record_usage(
+        &self,
+        _agent_id: &str,
+        _tokens: u64,
+        _cost_usd: f64,
+        _pool: Option<govrix_scout_store::StorePool>,
+    ) {
+    }
 }
 
 /// Default no-op policy — allows all traffic with `"audit:none"` tag.

@@ -19,9 +19,6 @@ mod tests {
     #[test]
     fn event_channel_creates_without_panic() {
         let (sender, _rx) = govrix_scout_proxy::events::create_channel();
-        assert_eq!(
-            sender.metrics().events_sent.load(Ordering::Relaxed),
-            0
-        );
+        assert_eq!(sender.metrics().events_sent.load(Ordering::Relaxed), 0);
     }
 }

@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { FileText, Download, Loader2, CheckCircle2, AlertCircle, FileDown } from 'lucide-react'
-import { useReportTypes, useReports, useGenerateReport } from '../api/hooks'
+import { useReportTypes, useReports } from '../api/hooks'
 import * as apiClient from '../api/client'
 
 /* ── Helpers ──────────────────────────────────────────────────── */
@@ -191,7 +191,6 @@ export default function ReportsPage() {
   // Scout API hooks (wired, though client-side generation is primary for OSS templates)
   const { data: _reportTypes } = useReportTypes()
   const { data: reports } = useReports()
-  const _generateReport = useGenerateReport()
 
   const showToast = (msg: string, ok = true): void => {
     setToast({ text: msg, ok })

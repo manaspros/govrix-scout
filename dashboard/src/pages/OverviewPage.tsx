@@ -1,4 +1,3 @@
-import React from 'react'
 import {
   BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -14,9 +13,6 @@ const fmt = (n: number | undefined | null): string =>
 
 const fmtUsd = (n: number | undefined | null): string =>
   typeof n === 'number' ? `$${n.toFixed(4)}` : '$0.00'
-
-const fmtMs = (n: number | undefined | null): string =>
-  typeof n === 'number' ? `${Math.round(n)}ms` : '—'
 
 interface StatCardProps {
   icon: ElementType

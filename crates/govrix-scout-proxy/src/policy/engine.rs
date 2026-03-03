@@ -353,9 +353,7 @@ impl PolicyEngine {
                 "budget engine: pre-loaded today's counters from DB"
             );
         } else {
-            tracing::warn!(
-                "budget tracker mutex poisoned — could not apply DB counters"
-            );
+            tracing::warn!("budget tracker mutex poisoned — could not apply DB counters");
         }
     }
 }
@@ -381,7 +379,13 @@ impl super::PolicyHook for PolicyEngine {
         None
     }
 
-    fn record_usage(&self, agent_id: &str, tokens: u64, cost_usd: f64, pool: Option<govrix_scout_store::StorePool>) {
+    fn record_usage(
+        &self,
+        agent_id: &str,
+        tokens: u64,
+        cost_usd: f64,
+        pool: Option<govrix_scout_store::StorePool>,
+    ) {
         self.record_usage_with_db(agent_id, tokens, cost_usd, pool);
     }
 }

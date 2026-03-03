@@ -62,7 +62,15 @@ pub async fn serve_full(
     policy_hook: Arc<dyn PolicyHook>,
     upstream_urls: UpstreamUrls,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    serve_full_with_pool(addr, event_sender, metrics, policy_hook, upstream_urls, None).await
+    serve_full_with_pool(
+        addr,
+        event_sender,
+        metrics,
+        policy_hook,
+        upstream_urls,
+        None,
+    )
+    .await
 }
 
 /// Start the hyper proxy server with a database pool for kill-switch enforcement.

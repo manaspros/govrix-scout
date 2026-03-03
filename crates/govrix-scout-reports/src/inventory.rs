@@ -66,10 +66,7 @@ impl AgentInventory {
         // Deterministic ordering: most-used agent first
         agents.sort_by(|a, b| b.total_tokens.cmp(&a.total_tokens));
 
-        let active_agents = agents
-            .iter()
-            .filter(|a| a.total_requests > 0)
-            .count();
+        let active_agents = agents.iter().filter(|a| a.total_requests > 0).count();
 
         Self {
             total_agents,
@@ -223,7 +220,10 @@ mod tests {
     fn inventory_to_html_is_valid_html() {
         let inv = AgentInventory::from_events(&sample_events());
         let html = inv.to_html();
-        assert!(html.contains("<!DOCTYPE html>"), "missing DOCTYPE in HTML output");
+        assert!(
+            html.contains("<!DOCTYPE html>"),
+            "missing DOCTYPE in HTML output"
+        );
         assert!(html.contains("Agent Inventory"));
         assert!(html.contains("scout"));
     }

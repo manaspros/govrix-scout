@@ -1,4 +1,3 @@
-import React from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { Bot, RefreshCw } from 'lucide-react'
 import { useAgents, useRetireAgent } from '../api/hooks'

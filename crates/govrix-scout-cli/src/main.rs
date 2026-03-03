@@ -27,11 +27,7 @@ use clap::{Parser, Subcommand};
 )]
 struct Cli {
     /// Govrix Scout API base URL
-    #[arg(
-        long,
-        env = "GOVRIX_API_URL",
-        default_value = "http://localhost:4001"
-    )]
+    #[arg(long, env = "GOVRIX_API_URL", default_value = "http://localhost:4001")]
     api_url: String,
 
     /// Output format

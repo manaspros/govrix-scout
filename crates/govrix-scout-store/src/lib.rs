@@ -30,4 +30,6 @@ pub use events::{get_event, get_events_for_agent, get_session_events, list_event
 pub use costs::{CostBreakdownRow, CostSummary, Granularity, GroupBy};
 
 // Budget persistence
-pub use budget::{get_budget_today, get_global_budget_today, list_budget_today, upsert_budget_usage};
+pub use budget::{
+    get_budget_today, get_global_budget_today, list_budget_today, upsert_budget_usage,
+};
