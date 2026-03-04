@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, type ReactNode }
 import { BrowserRouter, Routes, Route, Navigate, NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Radio, Bot, DollarSign, FileText,
-  ChevronRight, Search, Zap, Moon, Sun,
+  ChevronRight, Search, Moon, Sun,
 } from 'lucide-react'
 import { useHealth } from './api/hooks'
 
@@ -78,14 +78,16 @@ const Sidebar = () => {
 
   return (
     <aside
-      className="w-64 fixed inset-y-0 left-0 glass-panel border-r z-50 flex flex-col"
+      className="w-60 fixed inset-y-0 left-0 glass-panel border-r z-50 flex flex-col shadow-sm"
       style={darkMode ? { backgroundColor: '#0a0e18', borderColor: '#2a3347' } : {}}
     >
       <div className="p-5 border-b border-slate-100">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-            <Zap className="w-4 h-4 text-white" />
-          </div>
+          <img
+            src="/govrix-logo.jpeg"
+            alt="Govrix"
+            className={`h-8 w-8 rounded-lg object-cover logo-themed${darkMode ? ' logo-dark' : ''}`}
+          />
           <div>
             <h1 className="text-lg font-bold tracking-tight text-slate-900">
               Govrix<span className="text-primary">.</span>
@@ -97,6 +99,7 @@ const Sidebar = () => {
 
       <nav className="flex-1 px-3 py-4 space-y-6 overflow-y-auto">
         <div>
+          <p className="text-[9px] uppercase tracking-[0.15em] text-slate-400 font-bold px-3 mb-2">Navigation</p>
           <div className="space-y-0.5">
             {navItems.map(item => {
               const Icon = item.icon
@@ -134,8 +137,8 @@ const Header = () => {
 
   return (
     <header
-      className="h-14 border-b border-slate-200 bg-white sticky top-0 z-40 px-6 flex items-center justify-between"
-      style={darkMode ? { backgroundColor: '#161b27', borderColor: '#2a3347' } : {}}
+      className="h-14 border-b border-slate-200 bg-white/90 backdrop-blur-sm sticky top-0 z-40 px-6 flex items-center justify-between"
+      style={darkMode ? { backgroundColor: 'rgba(22,27,39,0.9)', borderColor: '#2a3347' } : {}}
     >
       <div className="flex items-center gap-2 text-sm">
         <span className="text-slate-400 text-xs">Scout OSS</span>
@@ -172,7 +175,7 @@ const Header = () => {
 const Layout = () => (
   <div className="flex min-h-screen">
     <Sidebar />
-    <main className="flex-1 ml-64 min-h-screen flex flex-col bg-slate-50">
+    <main className="flex-1 ml-60 min-h-screen flex flex-col bg-slate-50">
       <Header />
       <Outlet />
     </main>

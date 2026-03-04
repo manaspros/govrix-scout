@@ -111,8 +111,8 @@ export default function OverviewPage() {
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Cost by Model Bar Chart (replacing timeseries AreaChart — no timeseries API) */}
-          <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-5">
-            <h3 className="text-sm font-bold text-slate-700 mb-4">Cost by Model</h3>
+          <div className="group lg:col-span-2 bg-white border border-slate-200 rounded-xl p-5">
+            <h3 className="text-sm font-bold text-slate-700 mb-4 group-hover:text-primary transition-colors duration-200">Cost by Model</h3>
             {modelBarData.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={modelBarData}>
@@ -146,8 +146,8 @@ export default function OverviewPage() {
           </div>
 
           {/* Model Distribution Donut */}
-          <div className="bg-white border border-slate-200 rounded-xl p-5">
-            <h3 className="text-sm font-bold text-slate-700 mb-4">Requests by Model</h3>
+          <div className="group bg-white border border-slate-200 rounded-xl p-5">
+            <h3 className="text-sm font-bold text-slate-700 mb-4 group-hover:text-primary transition-colors duration-200">Requests by Model</h3>
             {pieData.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
@@ -185,8 +185,8 @@ export default function OverviewPage() {
         {/* Bottom Row: Cost by Agent + Recent Events */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Cost by Agent Bar Chart */}
-          <div className="bg-white border border-slate-200 rounded-xl p-5">
-            <h3 className="text-sm font-bold text-slate-700 mb-4">Cost by Agent</h3>
+          <div className="group bg-white border border-slate-200 rounded-xl p-5">
+            <h3 className="text-sm font-bold text-slate-700 mb-4 group-hover:text-primary transition-colors duration-200">Cost by Agent</h3>
             {agentBarData.length > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={agentBarData} layout="vertical">

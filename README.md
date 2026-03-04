@@ -139,17 +139,17 @@ curl -sSL https://raw.githubusercontent.com/manaspros/govrix-scout/main/install.
 ### 1. Clone and start
 
 ```bash
-git clone https://github.com/manaspros/Govrix Scout.git
-cd Govrix Scout
+git clone https://github.com/manaspros/govrix-scout.git
+cd govrix-scout
 docker compose -f docker/docker-compose.yml up -d
 ```
 
 ### 2. Point your agents
 
-Change one environment variable — that's it:
+Change **one environment variable** — that's it. No SDK changes, no code changes:
 
 ```bash
-# OpenAI agents
+# OpenAI-compatible agents (OpenAI, LiteLLM, Together, etc.)
 export OPENAI_BASE_URL=http://localhost:4000/proxy/openai/v1
 
 # Anthropic agents
@@ -170,6 +170,55 @@ curl http://localhost:4001/health
 ```
 
 **That's it. Your agents are now observable.**
+
+---
+
+### How does Govrix Scout identify agents?
+
+**No code changes are required.** Most agents don't send any custom identification headers — Govrix Scout handles that automatically with a 5-level fallback:
+
+| Priority | Source | Example ID in dashboard |
+|----------|--------|-------------------------|
+| 1 | `X-Govrix-Scout-Agent-Id` header | `my-research-bot` |
+| 2 | `Agent-Name` header | `langchain-pipeline` |
+| 3 | **API key fingerprint** ← *most common* | `key:...iqru4g7A` |
+| 4 | Source IP address | `ip:10.0.1.42` |
+| 5 | Last resort | `unknown` |
+
+**Level 3 works for virtually every agent with no changes.** The proxy reads the last 8 characters of the `Authorization: Bearer` token and groups all calls from the same key under one agent entry. You get full token tracking, cost attribution, PII detection, and audit history automatically.
+
+If you want a human-readable name instead of the key fingerprint, add one optional header:
+
+```python
+# Python / OpenAI SDK
+client = OpenAI(
+    api_key="sk-...",
+    base_url="http://localhost:4000/proxy/openai/v1",
+    default_headers={
+        "X-Govrix-Scout-Agent-Id": "my-research-bot",  # optional — improves readability
+    }
+)
+```
+
+```typescript
+// TypeScript / OpenAI SDK
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: "http://localhost:4000/proxy/openai/v1",
+  defaultHeaders: {
+    "X-Govrix-Scout-Agent-Id": "my-research-bot",  // optional
+  },
+});
+```
+
+```bash
+# curl — works with no extra headers at all
+curl http://localhost:4000/proxy/openai/v1/chat/completions \
+  -H "Authorization: Bearer sk-..." \
+  -H "Content-Type: application/json" \
+  -d '{"model":"gpt-4o","messages":[{"role":"user","content":"Hello"}]}'
+# → tracked as key:...last8chars
+```
 
 <br/>
 
@@ -472,8 +521,8 @@ channel_capacity = 10000
 ### First-time setup
 
 ```bash
-git clone https://github.com/manaspros/Govrix Scout.git
-cd Govrix Scout
+git clone https://github.com/manaspros/govrix-scout.git
+cd govrix-scout
 ./scripts/setup.sh
 ```
 
@@ -489,8 +538,8 @@ make dev-proxy
 # Terminal 3: Start dashboard (hot reload)
 make dev-dashboard
 
-# Seed demo data
-./scripts/seed-demo-data.sh
+# Verify everything is running
+./scripts/verify.sh
 ```
 
 ### Testing

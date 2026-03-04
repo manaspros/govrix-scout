@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { Bot, RefreshCw } from 'lucide-react'
-import { useAgents, useRetireAgent } from '../api/hooks'
+import { useAgents, useRetireAgent, useUpdateAgent } from '../api/hooks'
+import type { Agent } from '../api/types'
 
 const fmtNum = (n: number | undefined | null): string =>
   typeof n === 'number' ? n.toLocaleString() : '0'
@@ -22,6 +24,10 @@ const statusColor = (s: string | undefined): string => {
 export default function AgentsPage() {
   const { data, isLoading, refetch } = useAgents()
   const retireAgent = useRetireAgent()
+  const updateAgent = useUpdateAgent()
+
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState<{ name: string; status: string }>({ name: '', status: '' })
 
   const agents = data?.data ?? []
 
@@ -106,11 +112,33 @@ export default function AgentsPage() {
                   <td className="table-cell text-xs font-medium text-primary max-w-[180px] truncate">
                     {a.id || '—'}
                   </td>
-                  <td className="table-cell text-xs text-slate-500">{a.name || '—'}</td>
+                  <td className="table-cell text-xs text-slate-500">
+                    {editingId === a.id ? (
+                      <input
+                        className="input-field text-xs py-1 px-2 w-40"
+                        value={editForm.name}
+                        onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+                        placeholder="Agent name"
+                        autoFocus
+                      />
+                    ) : (
+                      <span className="text-xs text-slate-500">{a.name || '—'}</span>
+                    )}
+                  </td>
                   <td className="table-cell text-center">
-                    <span className={`badge ${statusColor(a.status)}`}>
-                      {a.status || 'unknown'}
-                    </span>
+                    {editingId === a.id ? (
+                      <select
+                        className="input-field text-xs py-1 px-2 w-28"
+                        value={editForm.status}
+                        onChange={e => setEditForm(f => ({ ...f, status: e.target.value }))}
+                      >
+                        <option value="active">active</option>
+                        <option value="blocked">blocked</option>
+                        <option value="retired">retired</option>
+                      </select>
+                    ) : (
+                      <span className={`badge ${statusColor(a.status)}`}>{a.status || 'unknown'}</span>
+                    )}
                   </td>
                   <td className="table-cell text-xs metric-font text-right">
                     {fmtNum(a.total_requests)}
@@ -135,14 +163,52 @@ export default function AgentsPage() {
                       : '—'}
                   </td>
                   <td className="table-cell text-center">
-                    {a.status === 'active' && (
-                      <button
-                        onClick={() => retireAgent.mutate(a.id)}
-                        disabled={retireAgent.isPending}
-                        className="text-xs text-red-500 hover:text-red-700 font-medium disabled:opacity-40 transition-colors"
-                      >
-                        Retire
-                      </button>
+                    {editingId === a.id ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={async () => {
+                            await updateAgent.mutateAsync({
+                              id: a.id,
+                              body: {
+                                name: editForm.name,
+                                status: editForm.status as Agent['status'],
+                              },
+                            })
+                            setEditingId(null)
+                          }}
+                          disabled={updateAgent.isPending}
+                          className="text-xs text-emerald-600 hover:text-emerald-700 font-semibold disabled:opacity-40 transition-colors"
+                        >
+                          {updateAgent.isPending ? 'Saving…' : 'Save'}
+                        </button>
+                        <button
+                          onClick={() => setEditingId(null)}
+                          className="text-xs text-slate-400 hover:text-slate-600 font-medium transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center gap-2">
+                        {a.status === 'active' && (
+                          <button
+                            onClick={() => retireAgent.mutate(a.id)}
+                            disabled={retireAgent.isPending}
+                            className="text-xs text-red-500 hover:text-red-700 font-medium disabled:opacity-40 transition-colors"
+                          >
+                            Retire
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            setEditingId(a.id)
+                            setEditForm({ name: a.name || '', status: a.status || 'active' })
+                          }}
+                          className="text-xs text-primary hover:text-primary-dark font-medium transition-colors"
+                        >
+                          Edit
+                        </button>
+                      </div>
                     )}
                   </td>
                 </tr>

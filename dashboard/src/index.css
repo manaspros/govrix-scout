@@ -27,15 +27,23 @@
      are intentionally duplicated so each class works as a standalone nav link
      state without requiring the other to be present. */
   .sidebar-item {
-    @apply flex items-center gap-3 px-3 py-2 text-slate-500 hover:text-primary hover:bg-indigo-50/60 transition-colors text-sm font-medium rounded-lg;
+    @apply flex items-center gap-3 px-3 py-2 text-slate-500 hover:text-primary hover:bg-indigo-50/60 transition-all duration-150 text-sm font-medium rounded-lg border-l-2 border-transparent;
+  }
+  .sidebar-item:hover {
+    border-left-color: #a5b4fc; /* indigo-300 */
   }
 
   .sidebar-item-active {
-    @apply flex items-center gap-3 px-3 py-2 bg-primary/10 text-primary rounded-lg border border-primary/20 text-sm font-semibold;
+    @apply flex items-center gap-3 px-3 py-2 bg-primary/10 text-primary rounded-lg border border-primary/20 text-sm font-semibold border-l-4;
+    border-left-color: #6366f1;
   }
 
   .stat-card {
-    @apply bg-white border border-slate-200 rounded-xl p-5 hover:shadow-md transition-all;
+    @apply bg-white border border-slate-200 rounded-xl p-5 transition-all duration-200 ease-out;
+  }
+  .stat-card:hover {
+    @apply shadow-lg -translate-y-0.5;
+    border-color: #c7d2fe; /* indigo-200 */
   }
 
   .badge {
@@ -61,12 +69,16 @@
   }
 
   .btn-primary {
-    @apply bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-primary-dark transition-colors;
+    @apply bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-150;
   }
+  .btn-primary:hover { @apply bg-primary-dark shadow-md; }
+  .btn-primary:active { @apply scale-[0.97]; }
 
   .btn-secondary {
-    @apply bg-white text-slate-700 border border-slate-200 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors;
+    @apply bg-white text-slate-700 border border-slate-200 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150;
   }
+  .btn-secondary:hover { @apply bg-slate-50 border-slate-300 shadow-sm; }
+  .btn-secondary:active { @apply scale-[0.97]; }
 
   .table-header {
     @apply text-[10px] uppercase tracking-wider text-slate-500 font-bold;
@@ -123,6 +135,13 @@ html.dark .glass-panel {
 html.dark .stat-card {
   background-color: var(--dk-surface) !important;
   border-color: var(--dk-border) !important;
+}
+html.dark .stat-card:hover {
+  border-color: #3d4f7c !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5) !important;
+}
+html.dark .sidebar-item:hover {
+  border-left-color: rgba(124,127,250,0.5) !important;
 }
 
 /* Form controls */
@@ -238,3 +257,125 @@ html.dark [class*="border-l-slate-300"] { border-color: var(--dk-border) !import
 
 /* Inline SVG paths and strokes */
 html.dark .stroke-slate-200 { stroke: var(--dk-border) !important; }
+
+/* Logo theming */
+.logo-themed {
+  transition: filter 0.2s ease;
+}
+.logo-dark {
+  filter: invert(1) brightness(1.8);
+}
+
+/* ── Micro-animations ──────────────────────────────────────────── */
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.stat-card {
+  animation: fadeSlideIn 0.25s ease-out both;
+}
+
+/* Stagger cards via nth-child */
+.stat-card:nth-child(1) { animation-delay: 0ms; }
+.stat-card:nth-child(2) { animation-delay: 50ms; }
+.stat-card:nth-child(3) { animation-delay: 100ms; }
+.stat-card:nth-child(4) { animation-delay: 150ms; }
+
+/* Smooth focus rings */
+*:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Toast slide-up */
+@keyframes toastSlideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.toast-animate {
+  animation: toastSlideUp 0.2s ease-out both;
+}
+
+/* ── Stat card gradient top border on hover ──────────────────── */
+.stat-card {
+  position: relative;
+  overflow: hidden;
+}
+.stat-card:hover::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  border-radius: 12px 12px 0 0;
+}
+
+/* ── Table row improvements ──────────────────────────────────── */
+tbody tr {
+  transition: all 0.15s ease;
+}
+tbody tr:hover {
+  background: linear-gradient(90deg, rgba(99,102,241,0.04) 0%, rgba(99,102,241,0.01) 100%);
+}
+
+/* ── Empty states ────────────────────────────────────────────── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  color: #94a3b8;
+}
+.empty-state-icon {
+  width: 48px; height: 48px;
+  color: #cbd5e1;
+  margin-bottom: 12px;
+}
+.empty-state h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+.empty-state p {
+  font-size: 12px;
+  color: #94a3b8;
+  text-align: center;
+  max-width: 240px;
+}
+
+/* ── Chart panel polish ──────────────────────────────────────── */
+.chart-panel {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+}
+.chart-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f8fafc;
+}
+.chart-panel-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #374151;
+}
+
+/* ── Dark mode overrides for new classes ─────────────────────── */
+html.dark .stat-card::before {
+  background: linear-gradient(90deg, #7c7ffa, #a78bfa) !important;
+}
+html.dark tbody tr:hover {
+  background: linear-gradient(90deg, rgba(124,127,250,0.06) 0%, transparent 100%) !important;
+}
+html.dark .chart-panel {
+  background-color: var(--dk-surface) !important;
+  border-color: var(--dk-border) !important;
+}

@@ -97,12 +97,18 @@ pub async fn forward(
         .request(parts.method.clone(), &upstream_url)
         .body(body.to_vec());
 
-    // Forward headers (strip hop-by-hop headers, adjust Host)
+    // Forward headers — strip hop-by-hop, Host, and Accept-Encoding.
+    // Stripping Host: reqwest sets Host from the URL (upstream hostname).
+    // Stripping Accept-Encoding: we handle the response body as raw bytes; letting
+    // the upstream compress would require transparent pass-through of Content-Encoding,
+    // which conflicts with our buffered body-tee pattern.
     for (name, value) in &parts.headers {
-        if !is_hop_by_hop_header(name.as_str()) {
-            if let Ok(v) = value.to_str() {
-                req_builder = req_builder.header(name.as_str(), v);
-            }
+        let lower = name.as_str().to_lowercase();
+        if lower == "host" || lower == "accept-encoding" || is_hop_by_hop_header(&lower) {
+            continue;
+        }
+        if let Ok(v) = value.to_str() {
+            req_builder = req_builder.header(name.as_str(), v);
         }
     }
 
@@ -180,10 +186,12 @@ pub async fn forward_streaming_collect(
         .body(body.to_vec());
 
     for (name, value) in &parts.headers {
-        if !is_hop_by_hop_header(name.as_str()) {
-            if let Ok(v) = value.to_str() {
-                req_builder = req_builder.header(name.as_str(), v);
-            }
+        let lower = name.as_str().to_lowercase();
+        if lower == "host" || lower == "accept-encoding" || is_hop_by_hop_header(&lower) {
+            continue;
+        }
+        if let Ok(v) = value.to_str() {
+            req_builder = req_builder.header(name.as_str(), v);
         }
     }
 

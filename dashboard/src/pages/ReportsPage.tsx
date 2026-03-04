@@ -240,6 +240,160 @@ export default function ReportsPage() {
     }
   }
 
+  const handleExportPDF = async (template: ReportTemplate): Promise<void> => {
+    const key = `${template.id}-pdf`
+    setGenerating(g => ({ ...g, [key]: true }))
+    try {
+      const data = await template.fetch()
+      const timestamp = new Date().toLocaleString()
+      const logoUrl = window.location.origin + '/govrix-logo.jpeg'
+
+      // Resolve rows (same logic as CSV branch)
+      const rows: Record<string, unknown>[] = Array.isArray(data)
+        ? (data as Record<string, unknown>[])
+        : ((data as Record<string, unknown[]>).events ??
+           (data as Record<string, unknown[]>).agents ??
+           (data as Record<string, unknown[]>).by_model ??
+           [data as Record<string, unknown>])
+
+      const displayRows = rows.slice(0, 200)
+
+      const esc = (v: unknown, maxLen = 60): string => {
+        if (v == null) return ''
+        const s = String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        return s.length > maxLen ? s.slice(0, maxLen) + '…' : s
+      }
+
+      const fmtKey = (k: string) =>
+        k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+
+      // Build table
+      let tableHTML = ''
+      if (displayRows.length > 0) {
+        const keys = Object.keys(displayRows[0])
+        const headerCells = keys.map(k => `<th>${fmtKey(k)}</th>`).join('')
+        const bodyRows = displayRows
+          .map(row => `<tr>${keys.map(k => `<td>${esc(row[k])}</td>`).join('')}</tr>`)
+          .join('')
+        tableHTML = `<table><thead><tr>${headerCells}</tr></thead><tbody>${bodyRows}</tbody></table>`
+      } else {
+        tableHTML = '<p class="no-data">No data available for this report.</p>'
+      }
+
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Govrix Scout \u2014 ${esc(template.label)} \u2014 ${fmtDate()}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;font-size:11px;color:#1e293b;background:#fff}
+
+    /* ── Header banner ── */
+    .hdr{background:linear-gradient(135deg,#6366f1 0%,#4338ca 100%);color:#fff;padding:24px 36px;display:flex;align-items:center;justify-content:space-between}
+    .hdr-left{display:flex;align-items:center;gap:14px}
+    .logo{width:44px;height:44px;border-radius:10px;object-fit:cover;border:2px solid rgba(255,255,255,0.3);flex-shrink:0}
+    .brand{font-size:22px;font-weight:800;letter-spacing:-0.5px;color:#fff}
+    .brand span{opacity:0.65}
+    .brand-sub{font-size:10px;color:rgba(255,255,255,0.65);font-weight:500;margin-top:2px}
+    .hdr-right{text-align:right}
+    .hdr-right .rtitle{font-size:15px;font-weight:700;color:#fff;margin-bottom:3px}
+    .hdr-right .rmeta{font-size:9.5px;color:rgba(255,255,255,0.7)}
+
+    /* ── Body ── */
+    .body{padding:28px 36px}
+
+    /* ── Meta bar ── */
+    .meta-bar{display:flex;gap:0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;margin-bottom:24px}
+    .meta-item{flex:1;padding:12px 16px;border-right:1px solid #e2e8f0}
+    .meta-item:last-child{border-right:none}
+    .meta-item label{display:block;font-size:8.5px;text-transform:uppercase;letter-spacing:0.07em;color:#94a3b8;font-weight:700;margin-bottom:3px}
+    .meta-item .val{font-size:13px;font-weight:700;color:#1e293b}
+
+    /* ── Section heading ── */
+    .section-title{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#64748b;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #f1f5f9}
+
+    /* ── Table ── */
+    table{width:100%;border-collapse:collapse;font-size:10px}
+    thead tr{background:#f1f5f9}
+    th{font-size:8.5px;text-transform:uppercase;letter-spacing:0.06em;color:#64748b;font-weight:700;padding:7px 10px;text-align:left;border-bottom:2px solid #e2e8f0;white-space:nowrap}
+    td{padding:6px 10px;color:#334155;border-bottom:1px solid #f1f5f9;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    tbody tr:nth-child(even){background:#fafbfc}
+    tbody tr:last-child td{border-bottom:none}
+
+    .no-data{color:#94a3b8;font-style:italic;padding:16px 0}
+    .truncation-note{font-size:9px;color:#94a3b8;margin-top:10px;font-style:italic}
+
+    /* ── Footer ── */
+    .footer{margin-top:32px;padding-top:12px;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;font-size:9px;color:#94a3b8}
+
+    /* ── Print ── */
+    @media print{
+      @page{margin:1cm;size:A4 landscape}
+      .hdr{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      thead tr{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      tbody tr:nth-child(even){-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    }
+  </style>
+</head>
+<body onload="window.print()">
+
+  <div class="hdr">
+    <div class="hdr-left">
+      <img class="logo" src="${logoUrl}" alt="Govrix" onerror="this.style.display='none'" />
+      <div>
+        <div class="brand">Govrix<span>.</span></div>
+        <div class="brand-sub">Scout OSS &nbsp;&middot;&nbsp; AI Agent Observability</div>
+      </div>
+    </div>
+    <div class="hdr-right">
+      <div class="rtitle">${esc(template.label)}</div>
+      <div class="rmeta">Generated ${esc(timestamp)}</div>
+      <div class="rmeta" style="margin-top:2px;opacity:0.6">govrix.dev</div>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="meta-bar">
+      <div class="meta-item"><label>Report</label><div class="val">${esc(template.label)}</div></div>
+      <div class="meta-item"><label>Total Records</label><div class="val">${rows.length.toLocaleString()}</div></div>
+      <div class="meta-item"><label>Exported</label><div class="val">${fmtDate()}</div></div>
+      <div class="meta-item"><label>Source</label><div class="val">Govrix Scout OSS</div></div>
+    </div>
+
+    <div class="section-title">Report Data</div>
+    ${tableHTML}
+    ${rows.length > 200 ? `<p class="truncation-note">Showing first 200 of ${rows.length.toLocaleString()} records. Export as CSV for full dataset.</p>` : ''}
+
+    <div class="footer">
+      <span>Govrix Scout OSS &mdash; AI Agent Observability Platform</span>
+      <span>Confidential &middot; ${fmtDate()}</span>
+    </div>
+  </div>
+
+  <script>window.onafterprint = function(){ window.close(); }<\/script>
+</body>
+</html>`
+
+      const popup = window.open('', '_blank')
+      if (popup) {
+        popup.document.write(html)
+        popup.document.close()
+      } else {
+        showToast('Pop-up blocked — please allow pop-ups and try again.', false)
+      }
+
+      showToast(`"${template.label}" PDF ready — use File → Save as PDF`, true)
+    } catch (e) {
+      showToast(
+        `Failed to export PDF for ${template.label}: ${e instanceof Error ? e.message : String(e)}`,
+        false,
+      )
+    } finally {
+      setGenerating(g => ({ ...g, [key]: false }))
+    }
+  }
+
   const handleReDownload = (entry: HistoryEntry): void => {
     if (entry.format === 'CSV') {
       const data = entry.data
@@ -265,7 +419,7 @@ export default function ReportsPage() {
 
         {/* Toast */}
         {toast && (
-          <div className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-xl text-sm font-medium border-l-4 ${
+          <div className={`fixed bottom-6 right-6 z-50 toast-animate flex items-center gap-2 px-4 py-3 rounded-lg shadow-xl text-sm font-medium border-l-4 ${
             toast.ok
               ? 'bg-green-50 border-green-500 text-green-700'
               : 'bg-red-50 border-red-500 text-red-700'
@@ -295,7 +449,8 @@ export default function ReportsPage() {
             {TEMPLATES.map(t => {
               const busyJSON = generating[`${t.id}-json`]
               const busyCSV = generating[`${t.id}-csv`]
-              const anyBusy = busyJSON || busyCSV
+              const busyPDF = generating[`${t.id}-pdf`]
+              const anyBusy = busyJSON || busyCSV || busyPDF
               return (
                 <div key={t.id} className="stat-card flex flex-col gap-3">
                   <div className="flex items-start gap-3">
@@ -318,7 +473,7 @@ export default function ReportsPage() {
                       : <FileDown className="w-3.5 h-3.5" />}
                     Export JSON
                   </button>
-                  {/* CSV — secondary */}
+                  {/* CSV + PDF — secondary */}
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleGenerate(t, 'csv')}
@@ -329,6 +484,16 @@ export default function ReportsPage() {
                         ? <Loader2 className="w-3 h-3 animate-spin" />
                         : <Download className="w-3 h-3" />}
                       CSV
+                    </button>
+                    <button
+                      onClick={() => handleExportPDF(t)}
+                      disabled={anyBusy}
+                      className="btn-secondary flex-1 flex items-center justify-center gap-1 text-[10px] py-1.5 disabled:opacity-60"
+                    >
+                      {busyPDF
+                        ? <Loader2 className="w-3 h-3 animate-spin" />
+                        : <FileText className="w-3 h-3" />}
+                      PDF
                     </button>
                   </div>
                 </div>

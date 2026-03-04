@@ -48,13 +48,11 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      GOVRIX_DATABASE__URL: postgres://govrix:govrix_scout_dev@postgres:5432/govrix
-      GOVRIX_DATABASE__MAX_CONNECTIONS: "20"
-      GOVRIX_DATABASE__MIN_CONNECTIONS: "2"
-      GOVRIX_PROXY__LISTEN_ADDR: "0.0.0.0:4000"
-      GOVRIX_API__LISTEN_ADDR: "0.0.0.0:4001"
-      GOVRIX_METRICS__LISTEN_ADDR: "0.0.0.0:9090"
+      GOVRIX_DATABASE_URL: postgres://govrix:govrix_scout_dev@postgres:5432/govrix
+      GOVRIX_PROXY_PORT: "4000"
+      GOVRIX_API_PORT: "4001"
       RUST_LOG: "govrix_scout_proxy=info,tower_http=debug"
+      GOVRIX_PROXY__UPSTREAM_OPENAI: "https://aigateway.atlan.dev"
     ports:
       - "4000:4000"   # Proxy (hot path)
       - "4001:4001"   # REST API

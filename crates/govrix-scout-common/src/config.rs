@@ -233,6 +233,12 @@ impl Config {
         if let Ok(val) = std::env::var("GOVRIX_PROXY_FAIL_OPEN") {
             self.proxy.fail_open = val.to_lowercase() != "false";
         }
+        if let Ok(url) = std::env::var("GOVRIX_PROXY__UPSTREAM_OPENAI") {
+            self.proxy.upstream_openai = url;
+        }
+        if let Ok(url) = std::env::var("GOVRIX_PROXY__UPSTREAM_ANTHROPIC") {
+            self.proxy.upstream_anthropic = url;
+        }
     }
 }
 
