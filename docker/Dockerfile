@@ -1,4 +1,4 @@
-# AgentMesh Proxy — Multi-stage Rust build
+# Govrix Scout Proxy — Multi-stage Rust build
 # ──────────────────────────────────────────────────────────────────────────────
 # Stage 1: Build
 # Stage 2: Runtime (minimal debian)
@@ -11,37 +11,38 @@ WORKDIR /app
 
 # Cache dependencies by copying manifests first
 COPY Cargo.toml Cargo.lock ./
-COPY crates/agentmesh-common/Cargo.toml crates/agentmesh-common/
-COPY crates/agentmesh-store/Cargo.toml crates/agentmesh-store/
-COPY crates/agentmesh-proxy/Cargo.toml crates/agentmesh-proxy/
-COPY crates/agentmesh-cli/Cargo.toml crates/agentmesh-cli/
-COPY crates/agentmesh-reports/Cargo.toml crates/agentmesh-reports/
+COPY crates/govrix-scout-common/Cargo.toml   crates/govrix-scout-common/
+COPY crates/govrix-scout-store/Cargo.toml    crates/govrix-scout-store/
+COPY crates/govrix-scout-proxy/Cargo.toml    crates/govrix-scout-proxy/
+COPY crates/govrix-scout-cli/Cargo.toml      crates/govrix-scout-cli/
+COPY crates/govrix-scout-reports/Cargo.toml  crates/govrix-scout-reports/
 
-# Create stub lib.rs / main.rs files to cache dependencies
-RUN mkdir -p crates/agentmesh-common/src \
-    && echo 'pub fn lib_stub() {}' > crates/agentmesh-common/src/lib.rs \
-    && mkdir -p crates/agentmesh-store/src \
-    && echo 'pub fn lib_stub() {}' > crates/agentmesh-store/src/lib.rs \
-    && mkdir -p crates/agentmesh-proxy/src \
-    && echo 'fn main() {}' > crates/agentmesh-proxy/src/main.rs \
-    && mkdir -p crates/agentmesh-cli/src \
-    && echo 'fn main() {}' > crates/agentmesh-cli/src/main.rs \
-    && mkdir -p crates/agentmesh-reports/src \
-    && echo 'pub fn lib_stub() {}' > crates/agentmesh-reports/src/lib.rs
+# Stub source files so dependency layer is cached independently of real source
+RUN mkdir -p crates/govrix-scout-common/src \
+    && echo 'pub fn stub() {}' > crates/govrix-scout-common/src/lib.rs \
+    && mkdir -p crates/govrix-scout-store/src \
+    && echo 'pub fn stub() {}' > crates/govrix-scout-store/src/lib.rs \
+    && mkdir -p crates/govrix-scout-proxy/src \
+    && echo 'fn main() {}' > crates/govrix-scout-proxy/src/main.rs \
+    && mkdir -p crates/govrix-scout-cli/src \
+    && echo 'fn main() {}' > crates/govrix-scout-cli/src/main.rs \
+    && mkdir -p crates/govrix-scout-reports/src \
+    && echo 'pub fn stub() {}' > crates/govrix-scout-reports/src/lib.rs
+
+# Pre-fetch and cache all crates.io dependencies
+RUN cargo fetch --locked
 
 # Build dependencies only (cached layer)
-RUN cargo build --release -p agentmesh-proxy 2>/dev/null; true
+RUN cargo build --release --frozen -p govrix-scout-proxy 2>/dev/null || true
 
-# Now copy the real source
+# Copy real source and rebuild
 COPY crates/ crates/
-
-# Build the real binary
-RUN cargo build --release -p agentmesh-proxy
+RUN touch crates/govrix-scout-proxy/src/main.rs && \
+    cargo build --release --frozen -p govrix-scout-proxy
 
 # ── Stage 2: Runtime ──────────────────────────────────────────────────────────
 FROM debian:bookworm-slim AS runtime
 
-# Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
@@ -49,21 +50,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Copy binary
-COPY --from=builder /app/target/release/agentmesh /usr/local/bin/agentmesh
+COPY --from=builder /app/target/release/govrix-scout /usr/local/bin/govrix-scout
 
-# Copy default config
-COPY config/agentmesh.default.toml /app/config/agentmesh.default.toml
+COPY config/ /app/config/
 
-# Create non-root user
-RUN useradd -r -s /bin/false agentmesh
-USER agentmesh
+RUN useradd -r -s /bin/false govrix
+USER govrix
 
-# Expose ports
 EXPOSE 4000 4001 9090
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:4001/health || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD curl -f http://127.0.0.1:4001/health || exit 1
 
-ENTRYPOINT ["agentmesh"]
+ENTRYPOINT ["govrix-scout"]

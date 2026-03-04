@@ -249,12 +249,12 @@ export default function ReportsPage() {
       const logoUrl = window.location.origin + '/govrix-logo.jpeg'
 
       // Resolve rows (same logic as CSV branch)
+      const anyData = data as Record<string, unknown>
       const rows: Record<string, unknown>[] = Array.isArray(data)
-        ? (data as Record<string, unknown>[])
-        : ((data as Record<string, unknown[]>).events ??
-           (data as Record<string, unknown[]>).agents ??
-           (data as Record<string, unknown[]>).by_model ??
-           [data as Record<string, unknown>])
+        ? (data as unknown[]).map(r => r as Record<string, unknown>)
+        : ((anyData.events ?? anyData.agents ?? anyData.by_model ?? [anyData]) as unknown[]).map(
+            r => r as Record<string, unknown>
+          )
 
       const displayRows = rows.slice(0, 200)
 
