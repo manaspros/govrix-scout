@@ -9,3 +9,4 @@ Please report security vulnerabilities to security@govrix.dev — do not open pu
 | Version | Supported |
 |---------|-----------|
 | 0.x     | ✓         |
+# Rate Limiting
