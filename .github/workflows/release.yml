@@ -7,8 +7,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  PROXY_IMAGE: ghcr.io/manaspros/govrix-scout
-  DASHBOARD_IMAGE: ghcr.io/manaspros/govrix-scout-dashboard
+  PROXY_IMAGE: ghcr.io/govrix-ai/govrix-scout
+  DASHBOARD_IMAGE: ghcr.io/govrix-ai/govrix-scout-dashboard
 
 jobs:
   build-and-push:

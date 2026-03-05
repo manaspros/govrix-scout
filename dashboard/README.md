@@ -1,6 +1,6 @@
 # Govrix Scout Dashboard
 
-A React + Vite dashboard for [Govrix Scout](https://github.com/GovrixAI/govrix-scout) — open-source AI agent observability.
+A React + Vite dashboard for [Govrix Scout](https://github.com/Govrix-AI/govrix-scout) — open-source AI agent observability.
 
 ## Pages
 

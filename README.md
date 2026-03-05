@@ -1,4 +1,8 @@
 <p align="center">
+  <img src="govrix final logo.png" alt="Govrix Scout Logo" width="200" />
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/Govrix_Scout-AI%20Agent%20Governance-8B5CF6?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiPjxwYXRoIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyem0tMiAxNWwtNS01IDEuNDEtMS40MUwxMCAxNC4xN2w3LjU5LTcuNTlMMTkgOGwtOSA5eiIvPjwvc3ZnPg==&logoColor=white" alt="Govrix Scout" />
 </p>
 
@@ -15,7 +19,7 @@
 <br/>
 
 <p align="center">
-  <b>⭐️ If you find Govrix Scout useful, <a href="https://github.com/GovrixAI/govrix-scout">please consider giving us a star!</a> It helps the open-source project grow. ⭐️</b>
+  <b>⭐️ If you find Govrix Scout useful, <a href="https://github.com/Govrix-AI/govrix-scout">please consider giving us a star!</a> It helps the open-source project grow. ⭐️</b>
 </p>
 
 <p align="center">
@@ -40,7 +44,7 @@
   <a href="https://govrix.dev"><b>Website</b></a> ·
   <a href="https://docs.govrix.dev"><b>Docs</b></a> ·
   <a href="#-quick-start"><b>Getting Started</b></a> ·
-  <a href="https://github.com/GovrixAI/govrix-scout/issues"><b>Issues</b></a> ·
+  <a href="https://github.com/Govrix-AI/govrix-scout/issues"><b>Issues</b></a> ·
   <a href="#-govrix-platform-enterprise"><b>Enterprise</b></a>
 </p>
 
@@ -131,13 +135,13 @@ Now every AI call is automatically **logged**, **costed**, **scanned for PII**, 
 curl -sSL https://govrix.dev/install.sh | bash
 
 # Windows (PowerShell as Admin)
-iwr -useb https://raw.githubusercontent.com/GovrixAI/govrix-scout/main/install.ps1 | iex
+iwr -useb https://raw.githubusercontent.com/Govrix-AI/govrix-scout/main/install.ps1 | iex
 ```
 
 ### Option B: Clone & Run
 
 ```bash
-git clone https://github.com/GovrixAI/govrix-scout.git
+git clone https://github.com/Govrix-AI/govrix-scout.git
 cd govrix-scout
 docker compose -f docker/docker-compose.yml up -d
 ```
@@ -494,7 +498,7 @@ rustc --version && cargo --version && node --version && pnpm --version && docker
 
 ```bash
 # 1. Clone
-git clone https://github.com/GovrixAI/govrix-scout.git
+git clone https://github.com/Govrix-AI/govrix-scout.git
 cd govrix-scout
 
 # 2. Start the database
@@ -657,5 +661,5 @@ make dev               # start everything with hot-reload
 ---
 
 <p align="center">
-  <a href="https://github.com/GovrixAI/govrix-scout">⭐ Star on GitHub</a> · <a href="https://github.com/GovrixAI/govrix-scout/issues">🐛 Report Bug</a> · <a href="https://github.com/GovrixAI/govrix-scout/issues">💡 Request Feature</a> · <a href="CONTRIBUTING.md">🤝 Contribute</a>
+  <a href="https://github.com/Govrix-AI/govrix-scout">⭐ Star on GitHub</a> · <a href="https://github.com/Govrix-AI/govrix-scout/issues">🐛 Report Bug</a> · <a href="https://github.com/Govrix-AI/govrix-scout/issues">💡 Request Feature</a> · <a href="CONTRIBUTING.md">🤝 Contribute</a>
 </p>
