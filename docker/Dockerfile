@@ -36,8 +36,10 @@ RUN cargo fetch --locked
 RUN cargo build --release --frozen -p govrix-scout-proxy 2>/dev/null || true
 
 # Copy real source and rebuild
+# touch ALL source roots so cargo sees them as newer than the stub-compiled
+# .rlib artifacts and recompiles every workspace crate from real source.
 COPY crates/ crates/
-RUN touch crates/govrix-scout-proxy/src/main.rs && \
+RUN find crates -name "*.rs" -exec touch {} + && \
     cargo build --release --frozen -p govrix-scout-proxy
 
 # ── Stage 2: Runtime ──────────────────────────────────────────────────────────
