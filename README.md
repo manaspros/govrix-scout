@@ -26,11 +26,6 @@
   Built with ❤️ by <a href="https://github.com/manaspros"><b>Manas</b></a>
 </p>
 
-<p align="center">
-  <a href="https://x.com/govrixai"><img src="https://img.shields.io/badge/X%20(Twitter)-black?style=flat-square&logo=x&logoColor=white" alt="X (Twitter)" /></a>
-  <a href="http://linkedin.com/company/govrix"><img src="https://img.shields.io/badge/LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white" alt="LinkedIn" /></a>
-  <a href="https://discord.gg/kYa8SqQd"><img src="https://img.shields.io/badge/Discord-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord" /></a>
-</p>
 
 <p align="center">
   <a href="#-quick-start"><img src="https://img.shields.io/badge/Setup-2%20Minutes-00C853?style=flat-square" alt="Setup Time" /></a>
