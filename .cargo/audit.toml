@@ -1,0 +1,5 @@
+[advisories]
+# RUSTSEC-2023-0071: Marvin Attack in rsa crate (via sqlx-mysql, transitive dep).
+# We use PostgreSQL only — sqlx-mysql is pulled in by sqlx internals, not by us.
+# No fix is available upstream. Safe to ignore for this project.
+ignore = ["RUSTSEC-2023-0071"]
