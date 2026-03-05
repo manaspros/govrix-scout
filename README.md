@@ -1,142 +1,141 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/Govrix-AI%20Agent%20Governance-8B5CF6?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiPjxwYXRoIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyem0tMiAxNWwtNS01IDEuNDEtMS40MUwxMCAxNC4xN2w3LjU5LTcuNTlMMTkgOGwtOSA5eiIvPjwvc3ZnPg==&logoColor=white" alt="Govrix" />
+  <img src="https://img.shields.io/badge/Govrix_Scout-AI%20Agent%20Governance-8B5CF6?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiPjxwYXRoIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyem0tMiAxNWwtNS01IDEuNDEtMS40MUwxMCAxNC4xN2w3LjU5LTcuNTlMMTkgOGwtOSA5eiIvPjwvc3ZnPg==&logoColor=white" alt="Govrix Scout" />
 </p>
 
-
-<h1 align="center">Govrix Scout</h1>
+<h1 align="center">🛡️ Govrix Scout</h1>
 
 <p align="center">
-  <b>Know what your AI agents are doing. Before your auditor asks.</b>
+  <b>Open-Source AI Agent Observability, Governance & Compliance Platform</b>
+</p>
+
+<p align="center">
+  <i>Know what your AI agents are doing — before your auditor asks.</i>
+</p>
+
+<br/>
+
+<p align="center">
+  <b>⭐️ If you find Govrix Scout useful, <a href="https://github.com/manaspros/govrix-scout">please consider giving us a star!</a> It helps the open-source project grow. ⭐️</b>
+</p>
+
+<p align="center">
+  Built with ❤️ by <a href="https://github.com/jaiswal-naman"><b>Naman</b></a> & <a href="https://github.com/manaspros"><b>Manas</b></a>
+</p>
+
+<p align="center">
+  <a href="https://x.com/govrix"><img src="https://img.shields.io/badge/X%20(Twitter)-black?style=flat-square&logo=x&logoColor=white" alt="X (Twitter)" /></a>
+  <a href="https://linkedin.com/company/govrix"><img src="https://img.shields.io/badge/LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white" alt="LinkedIn" /></a>
+  <a href="https://discord.gg/govrix"><img src="https://img.shields.io/badge/Discord-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord" /></a>
 </p>
 
 <p align="center">
   <a href="#-quick-start"><img src="https://img.shields.io/badge/Setup-2%20Minutes-00C853?style=flat-square" alt="Setup Time" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue?style=flat-square" alt="License" /></a>
-  <a href="https://www.rust-lang.org"><img src="https://img.shields.io/badge/Rust-1.82+-DEA584?style=flat-square&logo=rust&logoColor=white" alt="Rust" /></a>
+  <a href="https://www.rust-lang.org"><img src="https://img.shields.io/badge/Rust-1.75+-DEA584?style=flat-square&logo=rust&logoColor=white" alt="Rust" /></a>
   <a href="https://react.dev"><img src="https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React" /></a>
-  <a href="https://www.timescale.com"><img src="https://img.shields.io/badge/TimescaleDB-16-FDB515?style=flat-square&logo=postgresql&logoColor=white" alt="TimescaleDB" /></a>
+  <a href="https://www.timescale.com"><img src="https://img.shields.io/badge/TimescaleDB-PG16-FDB515?style=flat-square&logo=postgresql&logoColor=white" alt="TimescaleDB" /></a>
+</p>
+
+<p align="center">
+  <a href="https://govrix.dev"><b>Website</b></a> ·
+  <a href="https://docs.govrix.dev"><b>Docs</b></a> ·
+  <a href="#-quick-start"><b>Getting Started</b></a> ·
+  <a href="https://github.com/manaspros/govrix-scout/issues"><b>Issues</b></a> ·
+  <a href="#-govrix-platform-enterprise"><b>Enterprise</b></a>
 </p>
 
 <br/>
 
 <p align="center">
-  <code>Wireshark</code> meets <code>Datadog</code> — purpose-built for AI agents.
+  <!-- TODO: Add a real screenshot of your dashboard and save it to docs/assets/demo.png -->
+  <img src="docs/assets/demo.png" alt="Govrix Scout Dashboard Demo" width="800" />
 </p>
 
 ---
 
-<br/>
+## 🎯 What is Govrix Scout?
 
-## The Problem
-
-Your company is deploying AI agents. Fast. But nobody can answer these questions:
-
-```
- "How many AI agents are running in production right now?"          → Nobody knows.
- "What data did the agent access before it sent that email?"        → No audit trail.
- "Why did our OpenAI bill spike to $47K last Tuesday?"              → Can't trace it.
- "Did any agent leak customer PII in the last 30 days?"            → Hope not.
- "Can we prove to auditors what our agents did and didn't do?"      → Definitely not.
-```
-
-**This isn't hypothetical.** This is happening right now at companies like yours:
-
-- **Gartner predicts 40% of enterprise apps** will have AI agents by end of 2026 — up from <5% in 2025
-- **Shadow AI breaches cost $670K more** than standard breaches (IBM 2025 Breach Report)
-- **65% of shadow AI incidents** compromise customer PII — vs 53% for traditional breaches
-- **69% of organizations** suspect employees are using unauthorized AI tools (Gartner 2025)
-- **EU AI Act enforcement begins August 2026** — penalties up to **€35M or 7% of global revenue**
-
-> Every AI agent action in an enterprise should be as auditable as a financial transaction. Today, that infrastructure does not exist.
-
-**Govrix Scout makes it exist.**
-
-<br/>
-
-## What Govrix Scout Does
-
-Govrix Scout is a **transparent proxy** that sits between your AI agents and their APIs. It captures every request and response — without touching a single line of your agent code.
-
-```
-  Your Agent                   Govrix Scout Proxy                    OpenAI / Anthropic
-  ─────────                    ───────────────                    ──────────────────
-       │                             │                                   │
-       │  OPENAI_BASE_URL=           │                                   │
-       │  localhost:4000/proxy/...   │                                   │
-       │ ───────────────────────────>│                                   │
-       │                             │  ┌─ Parse request ──────────┐    │
-       │                             │  │  Extract: agent_id,      │    │
-       │                             │  │  model, tokens, tools    │    │
-       │                             │  │  Generate: session_id,   │    │
-       │                             │  │  lineage_hash            │    │
-       │                             │  └──────────────────────────┘    │
-       │                             │                                   │
-       │                             │  Fire event to channel (async)    │
-       │                             │  ──────────────────────────────>  │
-       │                             │  Forward request UNCHANGED ────>  │
-       │                             │                                   │
-       │                             │  <──────── Response ────────────  │
-       │                             │                                   │
-       │                             │  ┌─ Parse response ─────────┐    │
-       │                             │  │  Extract: tokens, cost,  │    │
-       │                             │  │  finish_reason, PII scan │    │
-       │                             │  └──────────────────────────┘    │
-       │                             │                                   │
-       │  <────── Response UNCHANGED │                                   │
-       │                             │                                   │
-       │         Added latency: <5ms │                                   │
-```
+Govrix Scout is a **transparent reverse proxy** that sits between your AI agents and their APIs (OpenAI, Anthropic, etc.). It captures every request and response — **without touching your agent code**.
 
 **One env var. Zero code changes. Full visibility.**
 
-<br/>
-
-## Why Govrix Scout — Not Just Another Logging Tool
-
-| | Traditional Logging | APM Tools (Datadog, etc.) | **Govrix Scout** |
-|---|---|---|---|
-| **Understands AI protocols** | No | Partially | **Yes** — parses OpenAI, Anthropic, MCP, A2A natively |
-| **Zero agent modification** | Requires SDK changes | Requires instrumentation | **One env var change** |
-| **Agent auto-discovery** | Manual inventory | Manual tagging | **Automatic** — discovers agents from traffic |
-| **Cost attribution** | DIY | Generic metrics | **Per-agent, per-model, per-request** |
-| **PII detection** | Not built-in | Add-on | **Pattern flagging** — detects patterns; masking available with [Govrix Platform](https://Govrix Scout.io) |
-| **Compliance-ready audit trail** | No | No | **Yes** — cryptographic lineage hash chain |
-| **Latency overhead** | Varies | 10-50ms | **<5ms p99** |
-| **Self-hosted** | Depends | SaaS-only | **100% self-hosted, your data stays yours** |
-
-<br/>
-
-## Quick Start
-
-### Install (no Rust or Node.js needed — Docker only)
-
-**Linux / macOS:**
 ```bash
-curl -sSL https://govrix.dev/install.sh | bash
+export OPENAI_BASE_URL=http://localhost:4000/proxy/openai/v1
+# That's it. Your agents keep working exactly as before.
 ```
 
-**Windows (PowerShell):**
-```powershell
-iwr -useb https://raw.githubusercontent.com/manaspros/govrix-scout/main/install.ps1 | iex
+Now every AI call is automatically **logged**, **costed**, **scanned for PII**, and **attributed** to the agent that made it.
+
+```text
+  ┌─────────────────┐       ┌────────────────────┐       ┌───────────────────┐
+  │                 │       │   🛡️ Govrix Scout  │       │                   │
+  │   Your Agents   │ ────► │     (:4000)        │ ────► │  OpenAI / Claude  │
+  │                 │       └────────┬───────────┘       │                   │
+  └─────────────────┘                │                   └───────────────────┘
+                                     ▼
+                            ┌────────────────┐
+                            │  PostgreSQL    │
+                            │  & Dashboard   │
+                            └────────────────┘
 ```
 
-Points all agent traffic through Govrix on `localhost:4000`. Dashboard at `http://localhost:3000`.
+## 🌟 Why Govrix?
 
-### Developer Setup
+- **Zero Friction** — No SDKs to install. Just change one environment variable (`OPENAI_BASE_URL`).
+- **Complete Autonomy** — Agents are auto-discovered. No manual registration required.
+- **Audit-Ready** — Cryptographically hashes every event in a Merkle chain for tamper evidence.
+- **Privacy First** — Scans and flags 5 types of PII locally. Your data never leaves your infrastructure.
+
+<br/>
+
+---
+
+## ✨ Core Features
+
+| Feature                          | What it does                                                                          |
+| -------------------------------- | ------------------------------------------------------------------------------------- |
+| 🔍 **Agent Auto-Discovery**       | Every agent is automatically detected and catalogued — no manual registration, no SDK |
+| 📋 **Full Event Logging**         | Every request/response captured with model, tokens, cost, latency, and tool calls     |
+| 💰 **Cost Attribution**           | Track AI spend by agent, model, and time period — no more surprise bills              |
+| 🔐 **PII Detection**              | Flags emails, phone numbers, SSNs, credit cards, and IPs in agent traffic             |
+| 🔗 **Tamper-Evident Audit Trail** | SHA-256 Merkle hash chain proves event ordering and integrity                         |
+| 📊 **Real-Time Dashboard**        | Overview, agents, events, costs, budgets, projects, and compliance reports            |
+| 📡 **Streaming Support**          | Full SSE and chunked transfer support with minimal latency overhead                   |
+| ⚙️ **Policy Engine**              | YAML-based rules to allow, block, or alert on agent behaviors                         |
+
+<details>
+<summary><b>View deep-dive capabilities</b></summary>
+<br/>
+
+- **Agent Identity & Tracking**: Tracks source IP, active status, error counts, and last models used.
+- **Tamper Evidence Fields**: `session_id`, `timestamp`, `lineage_hash`, and `compliance_tag` are mandatory on every request.
+- **Streaming Pipeline**: Tees SSE streams with under 5ms (p99) latency overhead using a Rust `hyper` hot-path.
+- **Async Write Buffer**: Fire-and-forget channel batches writes to TimescaleDB every 100ms so I/O never blocks agent traffic.
+- **Reporting**: Generates artifacts ready for SOC 2, HIPAA, EU AI Act, and FINRA auditors.
+
+</details>
+
+**Supported protocols:** OpenAI · Anthropic · MCP · A2A · Custom HTTP
+
+<br/>
+
+---
+
+## 🚀 Quick Start
+
+> **Requires:** [Docker](https://docker.com) & Docker Compose v2
+
+### Option A: One-Line Install
 
 ```bash
 # Linux / macOS
-curl -sSL https://govrix.dev/install.sh | bash -s -- --dev
+curl -sSL https://govrix.dev/install.sh | bash
 
-# Windows (PowerShell)
-.\install.ps1 -Dev
+# Windows (PowerShell as Admin)
+iwr -useb https://raw.githubusercontent.com/manaspros/govrix-scout/main/install.ps1 | iex
 ```
 
-### Prerequisites
-
-- Docker & Docker Compose v2
-
-### 1. Clone and start
+### Option B: Clone & Run
 
 ```bash
 git clone https://github.com/manaspros/govrix-scout.git
@@ -144,515 +143,520 @@ cd govrix-scout
 docker compose -f docker/docker-compose.yml up -d
 ```
 
-### 2. Point your agents
+### What starts
 
-Change **one environment variable** — that's it. No SDK changes, no code changes:
+| Service         | Port   | Purpose                        |
+| --------------- | ------ | ------------------------------ |
+| **Proxy**       | `4000` | Route your agents here         |
+| **REST API**    | `4001` | Dashboard reads data from here |
+| **Dashboard**   | `3000` | Web UI — open in browser       |
+| **TimescaleDB** | `5432` | Event storage (PostgreSQL 16)  |
 
-```bash
-# OpenAI-compatible agents (OpenAI, LiteLLM, Together, etc.)
-export OPENAI_BASE_URL=http://localhost:4000/proxy/openai/v1
+### 🔌 Add Govrix to Your Existing Agent Setup (Step-by-Step)
 
-# Anthropic agents
-export ANTHROPIC_BASE_URL=http://localhost:4000/proxy/anthropic/v1
-```
+Govrix Scout works as a **transparent reverse proxy**. You change **one line** in your existing code — the API base URL — and every request flows through Govrix for logging, cost tracking, and compliance. **Your agent code, prompts, and logic stay exactly the same.**
 
-### 3. Open the dashboard
-
-```
-http://localhost:3000
-```
-
-### 4. Verify
-
-```bash
-curl http://localhost:4001/health
-# {"status":"ok","version":"0.1.0"}
-```
-
-**That's it. Your agents are now observable.**
+> **How it works:** Instead of your agent calling `api.openai.com` directly, it calls `localhost:4000` (Govrix). Govrix logs the request and forwards it to the real API. The response comes back through Govrix and is returned to your agent unchanged.
 
 ---
 
-### How does Govrix Scout identify agents?
+#### Step 1 — Make sure Govrix Scout is running
 
-**No code changes are required.** Most agents don't send any custom identification headers — Govrix Scout handles that automatically with a 5-level fallback:
+```bash
+# If you haven't started it yet:
+docker compose -f docker/docker-compose.yml up -d
 
-| Priority | Source | Example ID in dashboard |
-|----------|--------|-------------------------|
-| 1 | `X-Govrix-Scout-Agent-Id` header | `my-research-bot` |
-| 2 | `Agent-Name` header | `langchain-pipeline` |
-| 3 | **API key fingerprint** ← *most common* | `key:...iqru4g7A` |
-| 4 | Source IP address | `ip:10.0.1.42` |
-| 5 | Last resort | `unknown` |
+# Verify all services are up:
+curl http://localhost:4001/health   # → {"status":"ok"}
+curl http://localhost:4001/ready    # → {"status":"ready"}
+```
 
-**Level 3 works for virtually every agent with no changes.** The proxy reads the last 8 characters of the `Authorization: Bearer` token and groups all calls from the same key under one agent entry. You get full token tracking, cost attribution, PII detection, and audit history automatically.
+You should see all 4 services running (Proxy on `:4000`, API on `:4001`, Dashboard on `:3000`, TimescaleDB on `:5432`).
 
-If you want a human-readable name instead of the key fingerprint, add one optional header:
+---
 
+#### Step 2 — Change ONE line in your agent code
+
+Pick your framework below. Each example shows the **exact line** you need to change.
+
+<details open>
+<summary><b>🐍 Python — OpenAI SDK</b></summary>
+
+**❌ BEFORE (direct to OpenAI):**
 ```python
-# Python / OpenAI SDK
-client = OpenAI(
-    api_key="sk-...",
-    base_url="http://localhost:4000/proxy/openai/v1",
-    default_headers={
-        "X-Govrix-Scout-Agent-Id": "my-research-bot",  # optional — improves readability
-    }
+from openai import OpenAI
+
+client = OpenAI(api_key="sk-...")
+response = client.chat.completions.create(
+    model="gpt-4",
+    messages=[{"role": "user", "content": "Hello"}]
 )
 ```
 
-```typescript
-// TypeScript / OpenAI SDK
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-  baseURL: "http://localhost:4000/proxy/openai/v1",
-  defaultHeaders: {
-    "X-Govrix-Scout-Agent-Id": "my-research-bot",  // optional
-  },
+**✅ AFTER (through Govrix Scout):**
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    api_key="sk-...",                                                   # ← keep your real key
+    base_url="http://localhost:4000/proxy/openai/v1",                   # ← ADD THIS LINE
+    default_headers={"x-govrix-scout-agent-id": "my-agent-name"}       # ← OPTIONAL: name your agent
+)
+response = client.chat.completions.create(
+    model="gpt-4",
+    messages=[{"role": "user", "content": "Hello"}]
+)
+# Everything else stays exactly the same!
+```
+
+**What changed?** Only 2 lines added to the `OpenAI()` constructor: `base_url` and optionally `default_headers`. The rest of your code is untouched.
+
+</details>
+
+<details>
+<summary><b>🐍 Python — Anthropic SDK</b></summary>
+
+**❌ BEFORE (direct to Anthropic):**
+```python
+from anthropic import Anthropic
+
+client = Anthropic(api_key="sk-ant-...")
+message = client.messages.create(
+    model="claude-sonnet-4-20250514",
+    max_tokens=1024,
+    messages=[{"role": "user", "content": "Hello"}]
+)
+```
+
+**✅ AFTER (through Govrix Scout):**
+```python
+from anthropic import Anthropic
+
+client = Anthropic(
+    api_key="sk-ant-...",                                                # ← keep your real key
+    base_url="http://localhost:4000/proxy/anthropic/v1",                 # ← ADD THIS LINE
+    default_headers={"x-govrix-scout-agent-id": "my-claude-agent"}      # ← OPTIONAL
+)
+message = client.messages.create(
+    model="claude-sonnet-4-20250514",
+    max_tokens=1024,
+    messages=[{"role": "user", "content": "Hello"}]
+)
+```
+
+**What changed?** Added `base_url` pointing to Govrix's Anthropic proxy endpoint.
+
+</details>
+
+<details>
+<summary><b>🐍 Python — LangChain</b></summary>
+
+**❌ BEFORE:**
+```python
+from langchain_openai import ChatOpenAI
+
+llm = ChatOpenAI(model="gpt-4", api_key="sk-...")
+response = llm.invoke("Hello")
+```
+
+**✅ AFTER (through Govrix Scout):**
+```python
+from langchain_openai import ChatOpenAI
+
+llm = ChatOpenAI(
+    model="gpt-4",
+    api_key="sk-...",
+    base_url="http://localhost:4000/proxy/openai/v1",              # ← ADD THIS LINE
+    default_headers={"x-govrix-scout-agent-id": "langchain-agent"} # ← OPTIONAL
+)
+response = llm.invoke("Hello")
+```
+
+**What changed?** Added `base_url` and optionally `default_headers` to the `ChatOpenAI()` constructor.
+
+</details>
+
+<details>
+<summary><b>📦 Node.js — OpenAI SDK</b></summary>
+
+**❌ BEFORE:**
+```javascript
+import OpenAI from "openai";
+
+const client = new OpenAI({ apiKey: "sk-..." });
+const completion = await client.chat.completions.create({
+  model: "gpt-4",
+  messages: [{ role: "user", content: "Hello" }],
 });
 ```
 
+**✅ AFTER (through Govrix Scout):**
+```javascript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: "sk-...",
+  baseURL: "http://localhost:4000/proxy/openai/v1",                   // ← ADD THIS LINE
+  defaultHeaders: { "x-govrix-scout-agent-id": "my-node-agent" },    // ← OPTIONAL
+});
+const completion = await client.chat.completions.create({
+  model: "gpt-4",
+  messages: [{ role: "user", content: "Hello" }],
+});
+```
+
+**What changed?** Added `baseURL` and optionally `defaultHeaders` to the constructor.
+
+</details>
+
+<details>
+<summary><b>📦 Node.js — LangChain</b></summary>
+
+**❌ BEFORE:**
+```javascript
+import { ChatOpenAI } from "@langchain/openai";
+const model = new ChatOpenAI({ openAIApiKey: "sk-..." });
+```
+
+**✅ AFTER (through Govrix Scout):**
+```javascript
+import { ChatOpenAI } from "@langchain/openai";
+const model = new ChatOpenAI({
+  openAIApiKey: "sk-...",
+  configuration: {
+    baseURL: "http://localhost:4000/proxy/openai/v1",                 // ← ADD THIS LINE
+    defaultHeaders: { "x-govrix-scout-agent-id": "langchain-agent" } // ← OPTIONAL
+  }
+});
+```
+
+**What changed?** Added `configuration.baseURL` and optionally `defaultHeaders`.
+
+</details>
+
+<details>
+<summary><b>🤖 Python — CrewAI</b></summary>
+
+**❌ BEFORE:**
+```python
+from crewai import Agent, LLM
+
+llm = LLM(model="gpt-4", api_key="sk-...")
+agent = Agent(role="Researcher", llm=llm, ...)
+```
+
+**✅ AFTER (through Govrix Scout):**
+```python
+from crewai import Agent, LLM
+
+llm = LLM(
+    model="gpt-4",
+    api_key="sk-...",
+    base_url="http://localhost:4000/proxy/openai/v1"  # ← ADD THIS LINE
+)
+agent = Agent(role="Researcher", llm=llm, ...)
+```
+
+**What changed?** Added `base_url` to the `LLM()` constructor.
+
+</details>
+
+<details>
+<summary><b>🌐 Environment Variable Method (works with ANY agent)</b></summary>
+
+If your framework reads `OPENAI_BASE_URL` or `ANTHROPIC_BASE_URL` from the environment, you don't need to change any code at all:
+
+**❌ BEFORE (in your terminal / .env file):**
 ```bash
-# curl — works with no extra headers at all
+export OPENAI_API_KEY=sk-...
+# No base URL set → calls go directly to api.openai.com
+```
+
+**✅ AFTER (in your terminal / .env file):**
+```bash
+export OPENAI_API_KEY=sk-...
+export OPENAI_BASE_URL=http://localhost:4000/proxy/openai/v1    # ← ADD THIS LINE
+
+# For Anthropic agents:
+export ANTHROPIC_API_KEY=sk-ant-...
+export ANTHROPIC_BASE_URL=http://localhost:4000/proxy/anthropic/v1  # ← ADD THIS LINE
+```
+
+**What changed?** Added one environment variable. Zero code changes required.
+
+> **Tip:** Add these to your `.env` file so they persist across sessions.
+
+</details>
+
+<details>
+<summary><b>🧪 cURL (for quick testing)</b></summary>
+
+**❌ BEFORE (direct to OpenAI):**
+```bash
+curl https://api.openai.com/v1/chat/completions \
+  -H "Authorization: Bearer sk-..." \
+  -H "Content-Type: application/json" \
+  -d '{"model":"gpt-4","messages":[{"role":"user","content":"Hello"}]}'
+```
+
+**✅ AFTER (through Govrix Scout):**
+```bash
 curl http://localhost:4000/proxy/openai/v1/chat/completions \
   -H "Authorization: Bearer sk-..." \
   -H "Content-Type: application/json" \
-  -d '{"model":"gpt-4o","messages":[{"role":"user","content":"Hello"}]}'
-# → tracked as key:...last8chars
+  -H "x-govrix-scout-agent-id: test-agent" \
+  -d '{"model":"gpt-4","messages":[{"role":"user","content":"Hello"}]}'
 ```
 
-<br/>
-
-## What You Get
-
-### Real-Time Agent Inventory
-
-Every agent routing through the proxy is automatically discovered and catalogued. No manual registration. No SDK. No config files per agent.
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  AGENTS                                              3 active   │
-├──────────────────┬───────────┬────────┬──────────┬─────────────┤
-│ Agent            │ Framework │ Status │ Requests │ Cost (24h)  │
-├──────────────────┼───────────┼────────┼──────────┼─────────────┤
-│ research-bot     │ LangChain │ ● active │  12,847 │    $142.30 │
-│ code-assistant   │ CrewAI    │ ● active │   8,231 │     $89.44 │
-│ support-agent    │ AutoGen   │ ● idle   │     342 │      $3.71 │
-│ unknown-10.0.3.7 │ —         │ ⚠ unknown│      17 │      $0.89 │
-└──────────────────┴───────────┴────────┴──────────┴─────────────┘
-```
-
-### Every Action, Logged
-
-Every request and response is captured with full context — model, tokens, cost, latency, tool calls, and the complete payload for forensic replay.
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  EVENT TIMELINE                                    Feb 18, 2026 │
-├──────────┬────────────────┬──────────┬────────┬───────┬────────┤
-│ Time     │ Agent          │ Model    │ Tokens │ Cost  │ Status │
-├──────────┼────────────────┼──────────┼────────┼───────┼────────┤
-│ 14:03:22 │ research-bot   │ gpt-4o   │  2,847 │ $0.08 │ 200 ✓ │
-│ 14:03:21 │ code-assistant │ claude-4 │  1,203 │ $0.04 │ 200 ✓ │
-│ 14:03:19 │ research-bot   │ gpt-4o   │  4,102 │ $0.12 │ 200 ✓ │
-│ 14:03:18 │ support-agent  │ gpt-4o-m │    891 │ $0.01 │ 200 ✓ │
-│ 14:03:15 │ research-bot   │ gpt-4o   │  3,221 │ $0.09 │ ⚠ PII │
-└──────────┴────────────────┴──────────┴────────┴───────┴────────┘
-```
-
-### Cost Tracking That Actually Works
-
-Know exactly where your AI spend is going — by agent, by model, by day. No more surprise bills.
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  COST BREAKDOWN                          Last 7 days: $847.21  │
-│                                                                 │
-│  By Agent                    │  By Model                       │
-│  ────────                    │  ────────                       │
-│  research-bot    ████████ $412 │  gpt-4o       ████████ $523   │
-│  code-assistant  █████   $267 │  claude-4     █████   $198    │
-│  support-agent   ██     $089 │  gpt-4o-mini  ██     $089    │
-│  data-pipeline   █      $079 │  gpt-3.5      █      $037    │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### PII Pattern Flagging
-
-Govrix Scout flags sensitive data patterns in request and response payloads, logging their type and location so you know when PII flows through your agent traffic.
-
-- **Email addresses** — `john.doe@company.com` → flagged in compliance tag
-- **Phone numbers** — US format patterns
-- **Social Security Numbers** — `XXX-XX-XXXX` patterns
-- **Credit card numbers** — Major card patterns (Luhn-eligible)
-- **IP addresses** — Internal network addresses in prompts
-
-> Govrix Scout **detects and flags** PII patterns — it does not store the actual values. For **real-time PII masking and blocking** (redacting sensitive data before it reaches the upstream API), see [Govrix Platform](https://Govrix Scout.io).
-
-### Tamper-Evident Audit Trail
-
-Every event carries four mandatory compliance fields — no exceptions, no configuration needed:
-
-| Field | Purpose |
-|-------|---------|
-| `session_id` | Groups related requests into agent conversations |
-| `timestamp` | UTC ISO-8601, microsecond precision |
-| `lineage_hash` | SHA-256 Merkle chain — proves event ordering and integrity |
-| `compliance_tag` | Policy evaluation result: `pass:all`, `warn:pii_email`, `block:budget` |
-
-This gives you a **cryptographically linked chain of evidence** showing exactly what each agent did, when, and whether it triggered any policy violations.
-
-<br/>
-
-## Architecture
-
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                     YOUR INFRASTRUCTURE                          │
-│                                                                  │
-│   ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐              │
-│   │LangChain│ │ CrewAI  │ │ AutoGen │ │ Custom  │  Any agent.  │
-│   │  Agent  │ │  Agent  │ │  Agent  │ │  Agent  │  Any framework│
-│   └────┬────┘ └────┬────┘ └────┬────┘ └────┬────┘              │
-│        └───────────┴─────┬─────┴───────────┘                    │
-│                          │                                       │
-│              Change one env var:                                 │
-│              OPENAI_BASE_URL=localhost:4000/proxy/openai/v1      │
-│                          │                                       │
-│                ┌─────────▼──────────┐                            │
-│                │                    │    Rust / hyper + tokio     │
-│                │   Govrix Scout PROXY  │    <1ms p50 / <5ms p99     │
-│                │      :4000         │    Fail-open design        │
-│                │                    │                            │
-│                └──┬──────────────┬──┘                            │
-│                   │              │                                │
-│         ┌─────────▼───┐  ┌──────▼──────────┐                    │
-│         │  Upstream    │  │ Async Event     │                    │
-│         │  APIs        │  │ Pipeline        │                    │
-│         │              │  │                 │                    │
-│         │ • OpenAI     │  │ Channel (10K)   │                    │
-│         │ • Anthropic  │  │    ↓            │                    │
-│         │ • MCP        │  │ Batch Writer    │                    │
-│         │ • A2A        │  │ (100ms/100 evt) │                    │
-│         └──────────────┘  └──────┬──────────┘                    │
-│                                  │                                │
-│                        ┌─────────▼──────────┐                    │
-│                        │   TimescaleDB      │                    │
-│                        │   :5432            │                    │
-│                        │                    │                    │
-│                        │  • events table    │  7-day retention   │
-│                        │  • agents table    │  Auto-compression  │
-│                        │  • cost_daily view │  Hypertable        │
-│                        └─────────┬──────────┘                    │
-│                                  │                                │
-│                        ┌─────────▼──────────┐                    │
-│                        │   REST API (axum)  │                    │
-│                        │   :4001            │                    │
-│                        │                    │                    │
-│                        │  17 endpoints      │                    │
-│                        │  Bearer auth       │                    │
-│                        │  Prometheus        │                    │
-│                        └─────────┬──────────┘                    │
-│                                  │                                │
-│                        ┌─────────▼──────────┐                    │
-│                        │   Dashboard        │                    │
-│                        │   :3000            │                    │
-│                        │                    │                    │
-│                        │  React 18          │                    │
-│                        │  Real-time refresh │                    │
-│                        │  Dark theme        │                    │
-│                        └────────────────────┘                    │
-└──────────────────────────────────────────────────────────────────┘
-```
-
-### Why Rust for the Proxy?
-
-The proxy is the **hot path** — every single AI request flows through it. We use Rust with `hyper` directly (not a framework) to guarantee:
-
-- **<1ms p50 latency** — your agents won't notice it's there
-- **<5ms p99 latency** — even under load
-- **Zero garbage collection pauses** — predictable performance
-- **Fail-open design** — if Govrix Scout has an internal error, your agent traffic continues uninterrupted
-
-The database write is **fire-and-forget** — sent to a bounded async channel, never awaited in the request path.
-
-<br/>
-
-## Supported Protocols
-
-| Protocol | Route | Status |
-|----------|-------|--------|
-| **OpenAI API** | `/proxy/openai/v1/*` | Full support — chat, completions, embeddings, streaming |
-| **Anthropic API** | `/proxy/anthropic/v1/*` | Full support — messages, streaming |
-| **MCP** (Model Context Protocol) | `/proxy/mcp/{server}/*` | Passthrough (structured parsing planned) |
-| **A2A** (Agent-to-Agent) | `/proxy/a2a/{agent}/*` | Passthrough (structured parsing planned) |
-| **Custom upstream** | `/proxy/custom/{name}/*` | Generic passthrough for any HTTP API |
-
-<br/>
-
-## API Reference
-
-All endpoints on port `4001`. Responses follow `{"data": [...], "total": N}` for lists.
-
-<details>
-<summary><b>Health & Monitoring</b></summary>
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/health` | Liveness check |
-| `GET` | `/ready` | Readiness — verifies DB connection |
-| `GET` | `/metrics` | Prometheus metrics |
+**What changed?** Replaced `https://api.openai.com` with `http://localhost:4000/proxy/openai`. Added optional agent ID header.
 
 </details>
 
-<details>
-<summary><b>Events</b></summary>
+---
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/events` | List & filter events. Params: `agent_id`, `kind`, `protocol`, `model`, `from`, `to`, `search`, `min_cost`, `limit`, `offset`, `sort` |
-| `GET` | `/api/v1/events/:id` | Single event with full payload |
-| `GET` | `/api/v1/events/sessions/:session_id` | All events in a session (chronological) |
-| `GET` | `/api/v1/events/stream` | SSE real-time event stream |
+#### Step 3 — Open the Dashboard & Verify
 
-</details>
+1. Open **http://localhost:3000** in your browser
+2. Run your agent (make at least one API call)
+3. You should see the request appear in the dashboard within seconds
 
-<details>
-<summary><b>Agents</b></summary>
+**Checklist — you know it's working when:**
+- [ ] Dashboard shows your agent in the **Agents** tab
+- [ ] Each API call appears in the **Events** tab with model, tokens, and cost
+- [ ] The **Overview** page shows live metrics
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/agents` | List agents. Params: `status`, `label`, `sort`, `limit`, `offset` |
-| `GET` | `/api/v1/agents/:id` | Agent detail with aggregated stats |
-| `PUT` | `/api/v1/agents/:id` | Update name, description, labels |
-| `POST` | `/api/v1/agents/:id/retire` | Retire an agent |
-| `GET` | `/api/v1/agents/:id/events` | Events for a specific agent |
-
-</details>
-
-<details>
-<summary><b>Costs</b></summary>
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/costs/summary` | Time-bucketed costs. Params: `from`, `to`, `granularity` |
-| `GET` | `/api/v1/costs/breakdown` | Breakdown by `group_by`: agent, model, protocol |
-
-</details>
-
-<details>
-<summary><b>Reports & Config</b></summary>
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/reports/types` | Available report types |
-| `POST` | `/api/v1/reports/generate` | Generate a report (202 Accepted) |
-| `GET` | `/api/v1/reports` | List generated reports |
-| `GET` | `/api/v1/config` | Current config (secrets redacted) |
-
-</details>
-
-<br/>
-
-## Configuration
-
-Default config at `config/Govrix Scout.default.toml`. Override anything with environment variables:
+**Quick health check commands:**
 
 ```bash
-# Database
-GOVRIX_STORE__DATABASE_URL=postgresql://user:pass@host:5432/Govrix Scout
-# Proxy listens here
-GOVRIX_PROXY__LISTEN_PORT=4000
-# Management API uses Bearer auth under /api/v1/*
-GOVRIX_API_KEY=amesh_live_your_secret_key_here
-# Filter telemetry output
-RUST_LOG=Govrix Scout=info
+# Check all services are running
+curl http://localhost:4001/health   # → {"status":"ok"}
+curl http://localhost:4001/ready    # → {"status":"ready"}
+
+# Test the proxy is forwarding correctly (replace with your key)
+curl http://localhost:4000/proxy/openai/v1/chat/completions \
+  -H "Authorization: Bearer sk-..." \
+  -H "Content-Type: application/json" \
+  -d '{"model":"gpt-4","messages":[{"role":"user","content":"ping"}]}'
 ```
 
-<details>
-<summary><b>Full TOML config reference</b></summary>
+---
 
-```toml
-[proxy]
-listen_address = "0.0.0.0"
-listen_port = 4000
-max_connections = 10000
-request_timeout_seconds = 300
+#### ❓ Troubleshooting
 
-[proxy.upstreams.openai]
-base_url = "https://api.openai.com"
-timeout_seconds = 120
-
-[proxy.upstreams.anthropic]
-base_url = "https://api.anthropic.com"
-timeout_seconds = 120
-
-[store]
-database_url = "postgresql://Govrix Scout:Govrix Scout@localhost:5432/Govrix Scout"
-max_connections = 20
-retention_days = 7
-batch_size = 100
-batch_interval_ms = 100
-channel_capacity = 10000
-
-[pricing.openai]
-"gpt-4o".input_per_1m = 2.50
-"gpt-4o".output_per_1m = 10.00
-
-[pricing.anthropic]
-"claude-sonnet-4-20250514".input_per_1m = 3.00
-"claude-sonnet-4-20250514".output_per_1m = 15.00
-```
-
-</details>
+| Problem                           | Solution                                                                       |
+| --------------------------------- | ------------------------------------------------------------------------------ |
+| `Connection refused` on port 4000 | Make sure Docker containers are running: `docker ps`                           |
+| Agent not appearing in dashboard  | Wait 5 seconds, then refresh. Check `x-govrix-scout-agent-id` header           |
+| API key errors                    | Your real API key must be valid — Govrix forwards it unchanged                 |
+| Slow responses                    | First request may take ~1s (cold start). Subsequent requests add <5ms overhead |
+| Dashboard blank on `:3000`        | Ensure the dashboard container is running: `docker compose logs dashboard`     |
 
 <br/>
 
-## Development
+---
+
+## 🛠️ Build from Source
+
+> For contributors and developers. Most users should use [Quick Start](#-quick-start) above.
 
 ### Prerequisites
 
-| Tool | Version | Install |
-|------|---------|---------|
-| Rust | 1.82+ | [rustup.rs](https://rustup.rs) |
-| Node.js | 20+ | [nodejs.org](https://nodejs.org) |
-| pnpm | 9+ | `corepack enable` |
-| Docker | Latest | [docker.com](https://docker.com) |
+| Tool               | Version | Install                                                                                            |
+| ------------------ | ------- | -------------------------------------------------------------------------------------------------- |
+| **Rust + Cargo**   | 1.75+   | [rustup.rs](https://rustup.rs) — `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \| sh` |
+| **C/C++ Linker**   | —       | Required by Rust (see below)                                                                       |
+| **Node.js**        | 20 LTS+ | [nodejs.org](https://nodejs.org)                                                                   |
+| **pnpm**           | 9+      | `corepack enable && corepack prepare pnpm@latest --activate`                                       |
+| **Docker**         | 25+     | [docker.com](https://www.docker.com/get-started/)                                                  |
+| **Docker Compose** | v2+     | Included with Docker Desktop                                                                       |
 
-### First-time setup
+#### C/C++ Linker (Required for Rust)
+
+Rust needs a system linker to compile. Install one for your platform:
+
+| Platform            | What to install                                                                                                                        | Command                                |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| **Windows**         | [Visual Studio Build Tools 2022](https://visualstudio.microsoft.com/visual-cpp-build-tools/) → "Desktop development with C++" workload | (GUI installer)                        |
+| **macOS**           | Xcode Command Line Tools                                                                                                               | `xcode-select --install`               |
+| **Ubuntu / Debian** | build-essential                                                                                                                        | `sudo apt-get install build-essential` |
+| **Fedora / RHEL**   | gcc                                                                                                                                    | `sudo dnf install gcc`                 |
+
+> ⚠️ **Windows users**: Install the **Build Tools** (not the full Visual Studio IDE). Select the **C++ workload** — the Rust linker (`link.exe`) is bundled inside it.
+
+#### Verify Your Tools
+
+Run this to confirm your environment is ready:
 
 ```bash
+rustc --version && cargo --version && node --version && pnpm --version && docker --version
+```
+
+### Build & Run
+
+```bash
+# 1. Clone
 git clone https://github.com/manaspros/govrix-scout.git
 cd govrix-scout
-./scripts/setup.sh
+
+# 2. Start the database
+docker compose -f docker/docker-compose.yml up -d postgres
+
+# 3. Build the Rust proxy
+cargo build --release --workspace
+
+# 4. Run the proxy
+export DATABASE_URL=postgres://govrix:govrix_scout_dev@localhost:5432/govrix
+RUST_LOG=info ./target/release/govrix-scout
+
+# 5. Run the dashboard (separate terminal)
+cd dashboard
+pnpm install
+pnpm dev
 ```
 
-### Development workflow
+### Development with hot-reload
 
 ```bash
-# Terminal 1: Start database
-make docker-up
-
-# Terminal 2: Start proxy + API
-make dev-proxy
-
-# Terminal 3: Start dashboard (hot reload)
-make dev-dashboard
-
-# Verify everything is running
-./scripts/verify.sh
+cargo install cargo-watch          # one-time setup
+make docker-up                     # start database
+make dev-proxy                     # proxy with hot-reload (terminal 1)
+make dev-dashboard                 # dashboard with hot-reload (terminal 2)
 ```
 
-### Testing
+### Run tests
 
 ```bash
-make test        # 156 Rust unit tests
-make lint        # cargo clippy -- -D warnings
-make fmt-check   # cargo fmt -- --check
-```
-
-### All make targets
-
-```bash
-make help        # List everything
-make setup       # First-time setup
-make build       # Release build
-make test        # Run all tests
-make lint        # Clippy
-make fmt         # Format code
-make docker-up   # Start containers
-make docker-down # Stop containers
-make migrate     # Run SQL migrations
-make clean       # Remove artifacts
+cargo test --workspace             # Rust unit tests
+cd dashboard && pnpm test          # Dashboard tests
+make ci                            # Full CI pipeline
 ```
 
 <br/>
 
-## The Regulatory Clock Is Ticking
+---
 
-<table>
-<tr>
-<td width="50%">
-
-### EU AI Act Timeline
-- **Feb 2025**: AI literacy obligations began
-- **Aug 2025**: Prohibited AI practices enforced
-- **Aug 2026**: **Full enforcement** — high-risk AI systems must comply
-- **Penalties**: Up to **€35M** or **7% of global revenue**
-
-### What Auditors Are Asking
-1. How many AI agents do you have?
-2. What data do they access?
-3. Can you prove what they did last Tuesday?
-4. Do you detect PII in agent traffic?
-5. Is there a tamper-evident audit trail?
-
-</td>
-<td width="50%">
-
-### Govrix Scout Answers All Five
+## 🗂️ Project Structure
 
 ```
-✓ Agent auto-discovery
-  → Full inventory, always current
-
-✓ Request/response logging
-  → Every API call, every payload
-
-✓ Tamper-evident lineage chain
-  → SHA-256 Merkle hash per event
-
-✓ PII pattern flagging
-  → 5 pattern types, zero PII storage
-  → Masking/blocking via Govrix Platform
-
-✓ Session-grouped audit trail
-  → Reconstruct any agent conversation
+govrix-scout/
+├── crates/
+│   ├── govrix-scout-common/       # Shared types, config, parsing
+│   ├── govrix-scout-store/        # Database layer (sqlx)
+│   ├── govrix-scout-proxy/        # Proxy (hyper) + API (axum) + policy engine
+│   ├── govrix-scout-cli/          # CLI (clap)
+│   └── govrix-scout-reports/      # Compliance report templates
+├── dashboard/                     # React 18 + Vite + Recharts
+├── docker/                        # Dockerfiles + compose
+├── init/                          # SQL migrations
+├── config/                        # Default config + policy examples
+└── scripts/                       # Setup, seed data, verification
 ```
-
-</td>
-</tr>
-</table>
 
 <br/>
 
-## Govrix Scout Enterprise
+---
 
-The open-source core gives you full visibility. When you need **control**, Govrix Scout Enterprise adds:
+## 🏗️ Technical Architecture (Bird's-Eye View)
 
-| Capability | What It Does |
-|------------|-------------|
-| **Real-time policy engine** | Block PII before it reaches the API, enforce token budgets, require human approval for high-risk actions |
-| **Session recorder** | Cryptographically signed replay of every agent session — evidence-grade for legal and compliance |
-| **Compliance templates** | One-click reports for SOC 2, EU AI Act, HIPAA, FINRA — mapped to your actual agent data |
-| **A2A identity layer** | Agent certificates, capability attestation, permission scoping for multi-agent systems |
-| **SSO + RBAC** | Okta, Azure AD, Google Workspace. Role-based access to dashboard and API |
-| **Unlimited scale** | No agent cap, no retention limit, multi-cluster federation, Kubernetes Helm charts |
+Here's how Govrix Scout processes your agent traffic with near-zero latency overhead:
+
+```mermaid
+flowchart TB
+    subgraph ClientLayer ["Client Layer"]
+        direction LR
+        Agent["🤖 AI Agents\n(LangChain, CrewAI, etc.)"]
+        Browser["💻 Web Dashboard\n(React + Vite)"]
+    end
+
+    subgraph GovrixScout ["🛡️ Govrix Scout (Rust)"]
+        direction TB
+        Proxy["⚡ Proxy Server\n(hyper, port 4000)\nHot-path routing"]
+        API["⚙️ Management API\n(axum, port 4001)\nREST & Config"]
+        PolicyEngine["📋 Policy Engine\nYAML Rules & Budgets"]
+        EventChannel["📥 Event Channel\n(Bounded mpsc)"]
+        Writer["📝 Background Writer\nAsync Batching"]
+
+        Proxy <-->|"Hook"| PolicyEngine
+        Proxy -->|"Fire & Forget"| EventChannel
+        EventChannel --> Writer
+    end
+
+    subgraph DataLayer ["Data Layer"]
+        DB[("🐘 PostgreSQL 16\n(TimescaleDB, port 5432)")]
+    end
+
+    subgraph UpstreamLayer ["Upstream Providers"]
+        direction LR
+        OpenAI["OpenAI API"]
+        Anthropic["Anthropic API"]
+    end
+
+    %% Connections
+    Agent <==>|"1. Request/Response"| Proxy
+    Proxy <==>|"2. Forwarded Traffic"| OpenAI
+    Proxy <==>|"2. Forwarded Traffic"| Anthropic
+
+    API <==>|"Reads/Writes Config"| DB
+    Writer -->|"3. Async Batched Writes"| DB
+
+    Browser <==>|"REST API Calls"| API
+
+    classDef proxy fill:#8B5CF6,stroke:#fff,stroke-width:2px,color:#fff
+    classDef db fill:#FDB515,stroke:#fff,stroke-width:2px,color:#000
+    classDef upstream fill:#10a37f,stroke:#fff,stroke-width:2px,color:#fff
+
+    class Proxy,API proxy
+    class DB db
+    class OpenAI,Anthropic upstream
+```
+
+- **Fail-Open Design:** The proxy uses a bounded non-blocking `mpsc` channel. If the database goes down, events are dropped but your agent traffic **continues to flow**.
+- **Minimal Latency:** The hot-path is built directly on `hyper` (bypassing generic web routing overhead) for sub-5ms processing latency.
+- **Asynchronous Storage:** Database writes and aggregations are batched in the background by a dedicated Tokio task.
+
+<br/>
+
+---
+
+## 🏢 Govrix Platform (Enterprise)
+
+Scout gives you **visibility**. When you need **control**:
+
+- **Real-time PII masking** — redact data before it reaches APIs
+- **Policy enforcement** — block budget overruns, require human approval
+- **Compliance reports** — one-click SOC 2, EU AI Act, HIPAA, FINRA
+- **A2A identity** — agent certificates and permission scoping
+- **SSO + RBAC** — Okta, Azure AD, Google Workspace
+- **Unlimited scale** — no caps, multi-cluster, Kubernetes Helm charts
 
 <p align="center">
-  <a href="https://Govrix Scout.io"><b>Learn more at Govrix Scout.io</b></a>
-  &nbsp;·&nbsp;
-  <a href="mailto:hello@Govrix Scout.io">Contact sales</a>
+  <a href="https://govrix.dev"><b>govrix.dev</b></a> · <a href="mailto:hello@govrix.dev">Contact sales</a>
 </p>
 
 <br/>
 
-## Contributing
+---
 
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for:
+## 🤝 Contributing
 
-- Development environment setup
-- Code standards (Rust: `clippy` + `rustfmt`, TypeScript: ESLint + Prettier)
-- Conventional commit format
-- PR process and review guidelines
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide. Quick version:
+
+```bash
+./scripts/setup.sh    # install deps
+make docker-up         # start database
+make dev               # start everything with hot-reload
+```
 
 <br/>
 
-## License
+---
+
+## 📜 License
 
 [Apache 2.0](LICENSE) — free to use, modify, and distribute. Forever.
 
 ---
 
 <p align="center">
-  <sub>Built for the teams that deploy AI agents — and the compliance teams that have to answer for them.</sub>
+  <a href="https://github.com/manaspros/govrix-scout">⭐ Star on GitHub</a> · <a href="https://github.com/manaspros/govrix-scout/issues">🐛 Report Bug</a> · <a href="https://github.com/manaspros/govrix-scout/issues">💡 Request Feature</a> · <a href="CONTRIBUTING.md">🤝 Contribute</a>
 </p>
