@@ -246,6 +246,7 @@ function Install-User {
     if (-not (Test-Path $envFile)) {
         Write-Info "Generating .env with secure credentials..."
         $dbPass    = New-SecureHex -ByteCount 24
+        $apiKey    = New-SecureHex -ByteCount 32
         $timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
 
         $envContent = @"
@@ -256,6 +257,7 @@ POSTGRES_USER=govrix
 POSTGRES_DB=govrix
 POSTGRES_PASSWORD=$dbPass
 
+GOVRIX_API_KEY=$apiKey
 GOVRIX_DATABASE__URL=postgres://govrix:${dbPass}@postgres:5432/govrix
 GOVRIX_DATABASE__MAX_CONNECTIONS=20
 GOVRIX_DATABASE__MIN_CONNECTIONS=2
