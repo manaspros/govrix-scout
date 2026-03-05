@@ -38,7 +38,7 @@ services:
 
   # ── Govrix Scout Proxy + API ──────────────────────────────────────────────────
   proxy:
-    image: ghcr.io/govrix-ai/govrix-scout:latest
+    image: ghcr.io/manaspros/govrix-scout:latest
     container_name: govrix-scout-proxy
     restart: unless-stopped
     depends_on:
@@ -63,7 +63,7 @@ services:
 
   # ── Dashboard (React + Vite) ──────────────────────────────────────────────────
   dashboard:
-    image: ghcr.io/govrix-ai/govrix-scout-dashboard:latest
+    image: ghcr.io/manaspros/govrix-scout-dashboard:latest
     container_name: govrix-scout-dashboard
     restart: unless-stopped
     depends_on:
