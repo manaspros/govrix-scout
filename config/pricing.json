@@ -1,0 +1,147 @@
+{
+  "schema_version": "1",
+  "last_updated": "2026-03-06T18:38:08.353285+00:00",
+  "models_count": 20,
+  "models": {
+    "gpt-4.1": {
+      "provider": "openai",
+      "input_per_1m_usd": 2.0,
+      "output_per_1m_usd": 8.0,
+      "context_window": 1000000,
+      "notes": null
+    },
+    "gpt-4.1-mini": {
+      "provider": "openai",
+      "input_per_1m_usd": 0.4,
+      "output_per_1m_usd": 1.6,
+      "context_window": 1000000,
+      "notes": null
+    },
+    "gpt-4.1-nano": {
+      "provider": "openai",
+      "input_per_1m_usd": 0.1,
+      "output_per_1m_usd": 0.4,
+      "context_window": 1000000,
+      "notes": null
+    },
+    "gpt-4o": {
+      "provider": "openai",
+      "input_per_1m_usd": 2.5,
+      "output_per_1m_usd": 10.0,
+      "context_window": 128000,
+      "notes": null
+    },
+    "gpt-4o-mini": {
+      "provider": "openai",
+      "input_per_1m_usd": 0.15,
+      "output_per_1m_usd": 0.6,
+      "context_window": 128000,
+      "notes": null
+    },
+    "gpt-4-turbo": {
+      "provider": "openai",
+      "input_per_1m_usd": 10.0,
+      "output_per_1m_usd": 30.0,
+      "context_window": 128000,
+      "notes": "legacy"
+    },
+    "gpt-4": {
+      "provider": "openai",
+      "input_per_1m_usd": 30.0,
+      "output_per_1m_usd": 60.0,
+      "context_window": 8192,
+      "notes": "legacy"
+    },
+    "gpt-3.5-turbo": {
+      "provider": "openai",
+      "input_per_1m_usd": 0.5,
+      "output_per_1m_usd": 1.5,
+      "context_window": 16385,
+      "notes": "legacy"
+    },
+    "o3": {
+      "provider": "openai",
+      "input_per_1m_usd": 10.0,
+      "output_per_1m_usd": 40.0,
+      "context_window": 200000,
+      "notes": null
+    },
+    "o3-mini": {
+      "provider": "openai",
+      "input_per_1m_usd": 1.1,
+      "output_per_1m_usd": 4.4,
+      "context_window": 200000,
+      "notes": null
+    },
+    "o4-mini": {
+      "provider": "openai",
+      "input_per_1m_usd": 1.1,
+      "output_per_1m_usd": 4.4,
+      "context_window": 200000,
+      "notes": null
+    },
+    "claude-opus-4-6": {
+      "provider": "anthropic",
+      "input_per_1m_usd": 5.0,
+      "output_per_1m_usd": 25.0,
+      "context_window": 200000,
+      "notes": null
+    },
+    "claude-sonnet-4-6": {
+      "provider": "anthropic",
+      "input_per_1m_usd": 3.0,
+      "output_per_1m_usd": 15.0,
+      "context_window": 200000,
+      "notes": null
+    },
+    "claude-opus-4-5": {
+      "provider": "anthropic",
+      "input_per_1m_usd": 5.0,
+      "output_per_1m_usd": 25.0,
+      "context_window": 200000,
+      "notes": null
+    },
+    "claude-sonnet-4-5": {
+      "provider": "anthropic",
+      "input_per_1m_usd": 3.0,
+      "output_per_1m_usd": 15.0,
+      "context_window": 200000,
+      "notes": null
+    },
+    "claude-haiku-4-5": {
+      "provider": "anthropic",
+      "input_per_1m_usd": 1.0,
+      "output_per_1m_usd": 5.0,
+      "context_window": 200000,
+      "notes": null
+    },
+    "claude-opus-4": {
+      "provider": "anthropic",
+      "input_per_1m_usd": 15.0,
+      "output_per_1m_usd": 75.0,
+      "context_window": 200000,
+      "notes": "legacy"
+    },
+    "claude-sonnet-4": {
+      "provider": "anthropic",
+      "input_per_1m_usd": 3.0,
+      "output_per_1m_usd": 15.0,
+      "context_window": 200000,
+      "notes": null
+    },
+    "claude-sonnet-3-5": {
+      "provider": "anthropic",
+      "input_per_1m_usd": 3.0,
+      "output_per_1m_usd": 15.0,
+      "context_window": 200000,
+      "notes": "legacy"
+    },
+    "claude-haiku-3-5": {
+      "provider": "anthropic",
+      "input_per_1m_usd": 0.8,
+      "output_per_1m_usd": 4.0,
+      "context_window": 200000,
+      "notes": "legacy"
+    }
+  }
+}
