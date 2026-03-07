@@ -102,3 +102,33 @@ clean: ## Remove build artifacts
 
 # ── CI ────────────────────────────────────────────────────────────────────────
 ci: fmt-check lint test build ## Run full CI pipeline (format check, lint, test, build)
+
+
+
+# ── Pricing ──────────────────────────────────────────────────────────────────
+.PHONY: update-pricing check-pricing
+## Fetch latest LLM pricing and update config/pricing.json
+update-pricing:
+	@echo "🔄  Updating LLM pricing..."
+	@cd scripts/pricing && \
+		pip install -q -r requirements.txt && \
+		python update_pricing.py
+	@echo "✅  Pricing updated. Commit config/pricing.json if changed."
+
+## preview what would change without writing (dry run)
+preview-pricing:
+	@cd scripts/pricing && \
+		pip install -q -r requirements.txt && \
+		python update_pricing.py --dry-run
+
+## CI:exit 1 if pricing.json is stale 
+check-pricing:
+	@cd scripts/pricing && \
+		pip install -q -r requirements.txt && \
+		python update_pricing.py --check
+
+# Run pricing updater tests 
+test-pricing:
+	@cd scripts/pricing && \
+		pip install -q -r requirements.txt && \
+		python -m pytest tests/ -v

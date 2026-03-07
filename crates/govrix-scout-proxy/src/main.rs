@@ -43,6 +43,23 @@ async fn main() -> anyhow::Result<()> {
         "Govrix Scout starting"
     );
 
+    // ── Dynamic Pricing (from config/pricing.json) ────────────────────────────────
+    // Load runtime pricing from the Python updater script if available.
+    // Falls back gracefully to embedded LiteLLM database if file doesn't exist.
+    let pricing_path = std::path::Path::new("config/pricing.json");
+    match govrix_scout_common::models::pricing::init_dynamic_pricing(pricing_path) {
+        Ok(count) => {
+            tracing::info!(
+                path = ?pricing_path,
+                model_count = count,
+                "dynamic pricing loaded from config/pricing.json"
+            );
+        }
+        Err(msg) => {
+            tracing::info!(msg, "using embedded LiteLLM pricing database");
+        }
+    }
+
     // ── Database pool ─────────────────────────────────────────────────────────
     // Attempt to connect to PostgreSQL. On failure, fall back to no-db mode
     // so the proxy still starts and forwards traffic (fail-open).
