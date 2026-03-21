@@ -9,11 +9,14 @@
 
 pub mod agents;
 pub mod budget;
+pub mod compliance_queries;
 pub mod costs;
 pub mod db;
 pub mod events;
 pub mod projects;
 pub mod retention;
+pub mod sessions;
+pub mod traces;
 
 // ── Top-level re-exports ──────────────────────────────────────────────────────
 

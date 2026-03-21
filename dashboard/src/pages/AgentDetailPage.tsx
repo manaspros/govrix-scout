@@ -1,250 +1,298 @@
-import { useParams, Link } from 'react-router-dom'
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
-import { ArrowLeft, Bot, Shield, AlertTriangle, Clock, DollarSign, Zap } from 'lucide-react'
-import { useAgent, useAgentRuns, useAgentViolations, useCostTimeseries } from '../api/hooks'
+import { useState } from 'react'
+import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { format, parseISO } from 'date-fns'
+import { ArrowLeft, Bot, GitBranch, History, RefreshCw, ChevronRight } from 'lucide-react'
+import { clsx } from 'clsx'
+import { fetchAgent } from '@/api/client'
+import { fetchTraces } from '@/api/traces'
+import type { Trace, TraceStatus } from '@/api/traces'
+import { StatusBadge } from '@/components/common/StatusBadge'
+import { AgentHistoryQuery } from '@/components/AgentHistoryQuery'
 
-const fmtNum = (n: number | undefined | null): string =>
-  typeof n === 'number' ? n.toLocaleString() : '0'
+// ── Tab types ─────────────────────────────────────────────────────────────────
 
-const fmtUsd = (n: number | undefined | null): string =>
-  typeof n === 'number' ? `$${n.toFixed(4)}` : '$0'
+type TabId = 'overview' | 'traces' | 'history'
 
-const fmtDate = (s: string | undefined | null): string => {
-  if (!s) return '\u2014'
-  return new Date(s).toLocaleString([], {
-    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+const TABS: { id: TabId; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { id: 'overview', label: 'Overview',   icon: Bot },
+  { id: 'traces',   label: 'Traces',     icon: GitBranch },
+  { id: 'history',  label: 'History',    icon: History },
+]
+
+// ── Trace status badge ────────────────────────────────────────────────────────
+
+const STATUS_STYLES: Record<TraceStatus, { dot?: string; cls: string; pulse?: boolean }> = {
+  running:   { dot: '#eab308', cls: 'bg-yellow-500/20 text-yellow-400 ring-1 ring-yellow-500/40', pulse: true },
+  completed: { dot: '#22c55e', cls: 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/40' },
+  stopped:   { dot: '#6b7280', cls: 'bg-slate-500/20 text-slate-400 ring-1 ring-slate-500/40' },
+  failed:    { dot: '#ef4444', cls: 'bg-red-500/20 text-red-400 ring-1 ring-red-500/40' },
+}
+
+function TraceStatusBadge({ status }: { status: TraceStatus }) {
+  const s = STATUS_STYLES[status] ?? STATUS_STYLES.stopped
+  return (
+    <span className={clsx('inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium', s.cls)}>
+      {s.dot && (
+        <span
+          className={clsx('w-1.5 h-1.5 rounded-full shrink-0', s.pulse && 'animate-pulse')}
+          style={{ background: s.dot }}
+        />
+      )}
+      {status}
+    </span>
+  )
+}
+
+// ── Overview tab ──────────────────────────────────────────────────────────────
+
+function OverviewTab({ agentId }: { agentId: string }) {
+  const { data: agent, isLoading } = useQuery({
+    queryKey: ['agents', agentId],
+    queryFn: () => fetchAgent(agentId),
+    staleTime: 15_000,
   })
-}
 
-const statusColor = (s: string | undefined): string => {
-  const map: Record<string, string> = {
-    active: 'badge-success',
-    idle: 'badge-neutral',
-    error: 'badge-danger',
-    blocked: 'badge-danger',
-    retired: 'badge-neutral',
-  }
-  return map[s ?? ''] || 'badge-neutral'
-}
-
-export default function AgentDetailPage() {
-  const { id } = useParams<{ id: string }>()
-  const { data: agentData, isLoading: agentLoading } = useAgent(id ?? '')
-  const { data: runsData, isLoading: runsLoading } = useAgentRuns(id ?? '')
-  const { data: violationsData } = useAgentViolations(id ?? '')
-  const { data: timeseriesData } = useCostTimeseries({ agent_id: id })
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const agent = (agentData as any)?.data ?? agentData
-  const runs = runsData?.data ?? []
-  const violations = violationsData?.data ?? []
-  const timeseries = timeseriesData?.data ?? []
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const chartData = timeseries.map((b: any) => ({
-    time: b.bucket ? new Date(b.bucket).toLocaleDateString([], { month: 'short', day: 'numeric' }) : '',
-    cost: b.total_cost_usd ?? 0,
-    requests: b.request_count ?? 0,
-  }))
-
-  if (agentLoading) {
+  if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="animate-pulse text-slate-400 text-sm">Loading agent...</div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-pulse">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="glass-card p-4">
+            <div className="h-3 bg-slate-700/50 rounded w-20 mb-2" />
+            <div className="h-5 bg-slate-700/30 rounded w-28" />
+          </div>
+        ))}
       </div>
     )
   }
 
   if (!agent) {
-    return (
-      <div className="flex-1 flex items-center justify-center flex-col gap-4">
-        <Bot className="w-12 h-12 text-slate-300" />
-        <p className="text-sm text-slate-500">Agent not found</p>
-        <Link to="/agents" className="text-xs text-primary hover:underline">Back to agents</Link>
+    return <div className="text-sm text-slate-500">Agent not found.</div>
+  }
+
+  const fields: { label: string; value: React.ReactNode }[] = [
+    { label: 'Agent ID',    value: <span className="font-mono text-slate-300 break-all">{agent.id}</span> },
+    { label: 'Status',      value: <StatusBadge value={agent.status} /> },
+    { label: 'Framework',   value: agent.framework ?? '—' },
+    { label: 'Description', value: agent.description ?? '—' },
+    { label: 'Requests',    value: <span className="tabular-nums" style={{ fontFamily: 'JetBrains Mono' }}>{(agent.total_requests ?? 0).toLocaleString()}</span> },
+    { label: 'Total Tokens',value: <span className="tabular-nums" style={{ fontFamily: 'JetBrains Mono' }}>{(agent.total_tokens ?? 0).toLocaleString()}</span> },
+    { label: 'Total Cost',  value: <span className="text-emerald-400 tabular-nums" style={{ fontFamily: 'JetBrains Mono' }}>${(agent.total_cost_usd ?? 0).toFixed(4)}</span> },
+    { label: 'Last Model',  value: agent.last_model_used ?? '—' },
+    { label: 'First Seen',  value: agent.first_seen_at ? format(parseISO(agent.first_seen_at), 'PPp') : '—' },
+    { label: 'Last Seen',   value: agent.last_seen_at ? format(parseISO(agent.last_seen_at), 'PPp') : '—' },
+    { label: 'Error Count', value: <span className={agent.error_count > 0 ? 'text-red-400' : 'text-slate-300'}>{agent.error_count}</span> },
+    { label: 'Source IP',   value: <span className="font-mono">{agent.source_ip ?? '—'}</span> },
+  ]
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+      {fields.map(f => (
+        <div key={String(f.label)} className="glass-card p-4">
+          <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1.5">{f.label}</div>
+          <div className="text-sm text-slate-200">{f.value}</div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ── Traces tab ────────────────────────────────────────────────────────────────
+
+function TracesTab({ agentId }: { agentId: string }) {
+  const { data, isLoading, refetch, isFetching } = useQuery({
+    queryKey: ['traces', { agentId }],
+    queryFn: () => fetchTraces({ agent_id: agentId, limit: 10 }),
+    staleTime: 10_000,
+  })
+
+  const traces: Trace[] = data?.traces ?? []
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-slate-500">{data?.total ?? traces.length} total traces</span>
+        <button
+          onClick={() => void refetch()}
+          disabled={isFetching}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition-colors disabled:opacity-50"
+        >
+          <RefreshCw className={clsx('w-3 h-3', isFetching && 'animate-spin')} />
+          Refresh
+        </button>
       </div>
-    )
+
+      <div className="overflow-x-auto rounded-xl border border-slate-700">
+        <table className="w-full text-sm">
+          <thead className="bg-slate-800/80">
+            <tr>
+              {['Status', 'Started', 'Duration', 'Spans', 'Cost'].map(h => (
+                <th
+                  key={h}
+                  className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider"
+                >
+                  {h}
+                </th>
+              ))}
+              <th className="px-4 py-3 w-8" />
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-700/40">
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <tr key={i} className="animate-pulse">
+                  {Array.from({ length: 6 }).map((__, j) => (
+                    <td key={j} className="px-4 py-3">
+                      <div className="h-4 bg-slate-700/50 rounded" />
+                    </td>
+                  ))}
+                </tr>
+              ))
+            ) : traces.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-500">
+                  No traces found for this agent.
+                </td>
+              </tr>
+            ) : (
+              traces.map(trace => (
+                <tr
+                  key={trace.trace_id}
+                  className="hover:bg-slate-700/20 transition-colors cursor-pointer"
+                >
+                  <td className="px-4 py-2.5">
+                    <TraceStatusBadge status={trace.status} />
+                  </td>
+                  <td className="px-4 py-2.5 text-xs text-slate-400 font-mono whitespace-nowrap">
+                    {format(parseISO(trace.started_at), 'MMM d HH:mm:ss')}
+                  </td>
+                  <td className="px-4 py-2.5 text-xs text-slate-400 tabular-nums font-mono">
+                    {trace.duration_ms != null ? `${trace.duration_ms}ms` : '—'}
+                  </td>
+                  <td className="px-4 py-2.5 text-xs text-slate-400 tabular-nums text-center font-mono">
+                    {trace.span_count ?? '—'}
+                  </td>
+                  <td className="px-4 py-2.5 text-xs text-emerald-400 tabular-nums font-mono">
+                    {trace.total_cost_usd != null ? `$${trace.total_cost_usd.toFixed(4)}` : '—'}
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <Link
+                      to={`/traces/${trace.trace_id}`}
+                      className="flex items-center gap-1 text-xs text-brand-400 hover:text-brand-300 transition-colors"
+                    >
+                      View <ChevronRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {traces.length > 0 && (
+        <div className="text-right">
+          <Link
+            to={`/traces?agent_id=${agentId}`}
+            className="text-xs text-brand-400 hover:text-brand-300 transition-colors"
+          >
+            View all traces for this agent →
+          </Link>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── AgentDetailPage ───────────────────────────────────────────────────────────
+
+export function AgentDetailPage() {
+  const { agentId } = useParams<{ agentId: string }>()
+  const navigate = useNavigate()
+  const [activeTab, setActiveTab] = useState<TabId>('overview')
+
+  const { data: agent } = useQuery({
+    queryKey: ['agents', agentId],
+    queryFn: () => fetchAgent(agentId!),
+    staleTime: 15_000,
+    enabled: !!agentId,
+  })
+
+  if (!agentId) {
+    return <div className="text-sm text-slate-500">No agent ID specified.</div>
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-6">
-      <div className="max-w-[1400px] mx-auto space-y-4">
-
-        {/* Back link */}
-        <Link to="/agents" className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-primary transition-colors mb-2">
+    <div className="space-y-4 stagger-in">
+      {/* Back */}
+      <div>
+        <button
+          onClick={() => navigate('/agents')}
+          className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-brand-400 transition-colors"
+        >
           <ArrowLeft className="w-3.5 h-3.5" />
-          Back to Agents
-        </Link>
+          All Agents
+        </button>
+      </div>
 
-        {/* Header Card */}
-        <div className="bg-white border border-slate-200 rounded-xl p-5">
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="flex items-center gap-3 mb-1">
-                <h2 className="text-lg font-bold text-slate-900">{agent.name || agent.id}</h2>
-                <span className={`badge ${statusColor(agent.status)}`}>{agent.status || 'unknown'}</span>
-              </div>
-              <p className="text-xs text-slate-400 font-mono">{agent.id}</p>
-            </div>
+      {/* Agent header */}
+      <div className="glass-card p-5">
+        <div className="flex items-center gap-4">
+          <div
+            className="flex items-center justify-center w-12 h-12 rounded-xl shrink-0"
+            style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}
+          >
+            <Bot className="w-6 h-6 text-brand-400" />
           </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-5">
-            <div className="bg-slate-50 rounded-lg p-3">
-              <div className="flex items-center gap-1.5 mb-1">
-                <Zap className="w-3.5 h-3.5 text-primary" />
-                <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Requests</span>
-              </div>
-              <p className="text-lg font-bold metric-font text-slate-800">{fmtNum(agent.total_requests)}</p>
+          <div>
+            <div className="text-lg font-semibold text-slate-100 font-display">
+              {agent?.name ?? agentId}
             </div>
-            <div className="bg-slate-50 rounded-lg p-3">
-              <div className="flex items-center gap-1.5 mb-1">
-                <DollarSign className="w-3.5 h-3.5 text-emerald-500" />
-                <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Total Cost</span>
-              </div>
-              <p className="text-lg font-bold metric-font text-slate-800">{fmtUsd(agent.total_cost_usd)}</p>
-            </div>
-            <div className="bg-slate-50 rounded-lg p-3">
-              <div className="flex items-center gap-1.5 mb-1">
-                <Clock className="w-3.5 h-3.5 text-amber-500" />
-                <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">First Seen</span>
-              </div>
-              <p className="text-sm font-semibold text-slate-700">{fmtDate(agent.first_seen_at)}</p>
-            </div>
-            <div className="bg-slate-50 rounded-lg p-3">
-              <div className="flex items-center gap-1.5 mb-1">
-                <Clock className="w-3.5 h-3.5 text-blue-500" />
-                <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Last Seen</span>
-              </div>
-              <p className="text-sm font-semibold text-slate-700">{fmtDate(agent.last_seen_at)}</p>
-            </div>
+            <div className="text-xs text-slate-500 font-mono mt-0.5">{agentId}</div>
           </div>
-        </div>
-
-        {/* Cost Over Time Chart */}
-        {chartData.length > 0 && (
-          <div className="bg-white border border-slate-200 rounded-xl p-5">
-            <h3 className="text-sm font-bold text-slate-700 mb-4">Cost Over Time</h3>
-            <ResponsiveContainer width="100%" height={220}>
-              <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id="costGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="time" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={60}
-                  tickFormatter={(v: number) => `$${v.toFixed(2)}`} />
-                <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8 }}
-                  formatter={(value: number) => [`$${value.toFixed(4)}`, 'Cost']} />
-                <Area type="monotone" dataKey="cost" stroke="#6366f1" fill="url(#costGradient)" strokeWidth={2} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-
-        {/* Runs Timeline */}
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-          <div className="p-4 border-b border-slate-100">
-            <h3 className="text-sm font-bold text-slate-700">Runs (Sessions)</h3>
-            <p className="text-xs text-slate-400">{runs.length} session{runs.length !== 1 ? 's' : ''}</p>
-          </div>
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/50">
-                <th className="table-header text-left py-3 px-4">Session</th>
-                <th className="table-header text-left py-3 px-4">Started</th>
-                <th className="table-header text-left py-3 px-4">Model</th>
-                <th className="table-header text-right py-3 px-4">Events</th>
-                <th className="table-header text-right py-3 px-4">Tokens In</th>
-                <th className="table-header text-right py-3 px-4">Tokens Out</th>
-                <th className="table-header text-right py-3 px-4">Cost</th>
-                <th className="table-header text-center py-3 px-4">Violations</th>
-              </tr>
-            </thead>
-            <tbody>
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {runs.map((run: any, i: number) => (
-                <tr key={run.session_id || i} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
-                  <td className="table-cell text-xs font-mono text-primary max-w-[140px] truncate">
-                    {run.session_id?.slice(0, 8) || '\u2014'}
-                  </td>
-                  <td className="table-cell text-xs text-slate-500">{fmtDate(run.started_at)}</td>
-                  <td className="table-cell text-xs text-slate-500">{run.model || '\u2014'}</td>
-                  <td className="table-cell text-xs metric-font text-right">{fmtNum(run.event_count)}</td>
-                  <td className="table-cell text-xs metric-font text-right">{fmtNum(run.total_input_tokens)}</td>
-                  <td className="table-cell text-xs metric-font text-right">{fmtNum(run.total_output_tokens)}</td>
-                  <td className="table-cell text-xs metric-font text-right">{fmtUsd(run.total_cost_usd)}</td>
-                  <td className="table-cell text-center">
-                    {run.has_violations ? (
-                      <span className="badge badge-danger">Yes</span>
-                    ) : (
-                      <span className="badge badge-success">Clean</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {runs.length === 0 && !runsLoading && (
-            <div className="text-center py-8 text-slate-400">
-              <p className="text-sm">No sessions recorded yet</p>
+          {agent && (
+            <div className="ml-auto">
+              <StatusBadge value={agent.status} size="md" />
             </div>
           )}
         </div>
+      </div>
 
-        {/* Violations Panel */}
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-          <div className="p-4 border-b border-slate-100">
-            <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-amber-500" />
-              <h3 className="text-sm font-bold text-slate-700">Violations</h3>
-            </div>
-            <p className="text-xs text-slate-400">{violations.length} violation{violations.length !== 1 ? 's' : ''} detected</p>
-          </div>
-          {violations.length > 0 ? (
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/50">
-                  <th className="table-header text-left py-3 px-4">Time</th>
-                  <th className="table-header text-left py-3 px-4">Compliance Tag</th>
-                  <th className="table-header text-left py-3 px-4">Model</th>
-                  <th className="table-header text-left py-3 px-4">PII Detected</th>
-                  <th className="table-header text-left py-3 px-4">Error</th>
-                </tr>
-              </thead>
-              <tbody>
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {violations.map((v: any, i: number) => (
-                  <tr key={v.id || i} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
-                    <td className="table-cell text-xs text-slate-500">{fmtDate(v.timestamp)}</td>
-                    <td className="table-cell">
-                      <span className={`badge ${v.compliance_tag?.startsWith('block') ? 'badge-danger' : 'badge-warning'}`}>
-                        {v.compliance_tag || '\u2014'}
-                      </span>
-                    </td>
-                    <td className="table-cell text-xs text-slate-500">{v.model || '\u2014'}</td>
-                    <td className="table-cell text-xs text-slate-500">
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {Array.isArray(v.pii_detected) && v.pii_detected.length > 0
-                        ? v.pii_detected.map((p: any) => p.pii_type || p).join(', ')
-                        : '\u2014'}
-                    </td>
-                    <td className="table-cell text-xs text-red-400 max-w-[200px] truncate">
-                      {v.error_message || '\u2014'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <div className="text-center py-8 text-slate-400">
-              <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-              <p className="text-sm">No violations detected</p>
-            </div>
-          )}
-        </div>
+      {/* Tabs */}
+      <div
+        className="flex items-center gap-1 p-1 rounded-xl"
+        style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(148,163,184,0.08)' }}
+      >
+        {TABS.map(tab => {
+          const Icon = tab.icon
+          const isActive = activeTab === tab.id
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={clsx(
+                'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200',
+                isActive
+                  ? 'text-slate-100 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-300',
+              )}
+              style={isActive ? {
+                background: 'rgba(16,185,129,0.12)',
+                border: '1px solid rgba(16,185,129,0.2)',
+              } : {}}
+            >
+              <Icon className={clsx('w-4 h-4', isActive ? 'text-brand-400' : 'text-slate-600')} />
+              {tab.label}
+            </button>
+          )
+        })}
+      </div>
 
+      {/* Tab content */}
+      <div>
+        {activeTab === 'overview' && <OverviewTab agentId={agentId} />}
+        {activeTab === 'traces'   && <TracesTab agentId={agentId} />}
+        {activeTab === 'history'  && <AgentHistoryQuery agentId={agentId} />}
       </div>
     </div>
   )

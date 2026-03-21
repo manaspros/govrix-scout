@@ -263,10 +263,10 @@ pub async fn get_budget_overview(pool: &StorePool) -> Result<Vec<serde_json::Val
             a.name,
             a.status,
             bc.daily_token_limit,
-            bc.daily_cost_limit_usd,
-            bc.monthly_cost_limit_usd,
+            bc.daily_cost_limit_usd::float8 AS daily_cost_limit_usd,
+            bc.monthly_cost_limit_usd::float8 AS monthly_cost_limit_usd,
             COALESCE(bd.tokens_used, 0) AS tokens_used_today,
-            COALESCE(bd.cost_usd, 0) AS cost_used_today
+            COALESCE(bd.cost_usd, 0)::float8 AS cost_used_today
         FROM agents a
         LEFT JOIN budget_config bc ON a.id = bc.agent_id
         LEFT JOIN budget_daily bd ON a.id = bd.agent_id AND bd.date = CURRENT_DATE

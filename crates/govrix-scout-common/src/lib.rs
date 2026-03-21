@@ -14,4 +14,5 @@ pub mod protocols;
 // Re-export commonly used types at the crate root
 pub use errors::GovrixScoutError;
 pub use models::{agent::Agent, cost::CostRecord, event::AgentEvent};
+pub use models::{session::Session, trace::Trace};
 pub use protocols::Protocol;

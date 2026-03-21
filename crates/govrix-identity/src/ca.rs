@@ -60,10 +60,23 @@ impl CertificateAuthority {
         KeyPair::from_pem(&self.ca_key).context("failed to parse CA key pair")
     }
 
-    /// Return parsed `CertificateParams` for the stored CA cert.
+    /// Rebuild `CertificateParams` matching the original CA cert.
+    ///
+    /// rcgen 0.13 does not support parsing PEM back into params, so we
+    /// reconstruct the params from the stored org_name. The resulting
+    /// self-signed cert will have the same DN and CA flags.
     pub(crate) fn cert_params(&self) -> Result<CertificateParams> {
-        CertificateParams::from_ca_cert_pem(&self.ca_cert)
-            .context("failed to parse CA certificate PEM")
+        let mut params = CertificateParams::default();
+        params
+            .distinguished_name
+            .push(DnType::CommonName, format!("{} Govrix CA", self.org_name));
+        params
+            .distinguished_name
+            .push(DnType::OrganizationName, &self.org_name);
+        params.is_ca = IsCa::Ca(rcgen::BasicConstraints::Unconstrained);
+        params.key_usages = vec![KeyUsagePurpose::KeyCertSign, KeyUsagePurpose::CrlSign];
+        params.not_after = rcgen::date_time_ymd(2036, 1, 1);
+        Ok(params)
     }
 }
 

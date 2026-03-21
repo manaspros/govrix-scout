@@ -16,6 +16,7 @@ path = "src/main.rs"
 [dependencies]
 govrix-scout-common = { workspace = true }
 govrix-scout-store = { workspace = true }
+sqlx = { workspace = true }
 
 # Async runtime
 tokio = { workspace = true }

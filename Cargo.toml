@@ -6,6 +6,10 @@ members = [
     "crates/govrix-scout-proxy",
     "crates/govrix-scout-cli",
     "crates/govrix-scout-reports",
+    "crates/govrix-common",
+    "crates/govrix-policy",
+    "crates/govrix-identity",
+    "crates/govrix-server",
 ]
 
 [workspace.package]
@@ -68,9 +72,25 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # Templating
 minijinja = "2"
 
+# Config
+figment = { version = "0.10", features = ["toml", "env"] }
+base64 = "0.22"
+serde_yaml = "0.9"
+
+# TLS / mTLS
+rcgen = "0.13"
+axum-server = { version = "0.7", features = ["tls-rustls"] }
+
+# Decimal
+rust_decimal = { version = "1", features = ["serde-float"] }
+
 # Internal crates
 govrix-scout-common = { path = "crates/govrix-scout-common" }
 govrix-scout-store = { path = "crates/govrix-scout-store" }
+govrix-scout-proxy = { path = "crates/govrix-scout-proxy" }
+govrix-common = { path = "crates/govrix-common" }
+govrix-policy = { path = "crates/govrix-policy" }
+govrix-identity = { path = "crates/govrix-identity" }
 
 [profile.release]
 opt-level = 3

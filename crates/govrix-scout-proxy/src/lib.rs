@@ -10,7 +10,11 @@
 //! via `use govrix_scout_proxy::*` instead of declaring its own `mod` blocks,
 //! so there is a single canonical source for each module.
 
+pub mod anomaly;
 pub mod api;
+pub mod circuit_breaker;
 pub mod events;
+pub mod otlp;
 pub mod policy;
 pub mod proxy;
+pub mod trace_context;

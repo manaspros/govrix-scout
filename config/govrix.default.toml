@@ -18,7 +18,7 @@ cors_enabled = true
 cors_origins = ["http://localhost:3000"]
 
 [database]
-url = "postgres://govrix:govrix@localhost:5432/govrix"
+url = "postgres://govrix:govrix_scout_dev@localhost:5432/govrix"
 max_connections = 20
 min_connections = 2
 connect_timeout_secs = 10

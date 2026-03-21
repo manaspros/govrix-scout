@@ -1,233 +1,220 @@
 import { useState } from 'react'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
-import { Link } from 'react-router-dom'
-import { Bot, RefreshCw } from 'lucide-react'
-import { useAgents, useRetireAgent, useUpdateAgent } from '../api/hooks'
-import type { Agent } from '../api/types'
+import { format, parseISO } from 'date-fns'
+import { Search, ChevronDown, ChevronRight, Bot, RefreshCw } from 'lucide-react'
+import { useAgents } from '@/api/hooks'
+import { StatusBadge } from '@/components/common/StatusBadge'
+import { EmptyState } from '@/components/common/EmptyState'
+import type { Agent, AgentStatus } from '@/api/types'
 
-const fmtNum = (n: number | undefined | null): string =>
-  typeof n === 'number' ? n.toLocaleString() : '0'
+// ── Agent detail expand panel ─────────────────────────────────────────────────
 
-const fmtUsd = (n: number | undefined | null): string =>
-  typeof n === 'number' ? `$${n.toFixed(4)}` : '$0'
-
-const statusColor = (s: string | undefined): string => {
-  const map: Record<string, string> = {
-    active: 'badge-success',
-    idle: 'badge-neutral',
-    error: 'badge-danger',
-    blocked: 'badge-danger',
-    retired: 'badge-neutral',
-  }
-  return map[s ?? ''] || 'badge-neutral'
+function AgentDetail({ agent }: { agent: Agent }) {
+  return (
+    <div className="bg-slate-900/60 px-6 py-4 border-t border-slate-700/40 grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+      <div>
+        <div className="text-slate-500 uppercase tracking-wider mb-1">Agent ID</div>
+        <div className="text-slate-300 font-mono break-all">{agent.id}</div>
+      </div>
+      <div>
+        <div className="text-slate-500 uppercase tracking-wider mb-1">Description</div>
+        <div className="text-slate-300">{agent.description ?? '—'}</div>
+      </div>
+      <div>
+        <div className="text-slate-500 uppercase tracking-wider mb-1">First Seen</div>
+        <div className="text-slate-300">
+          {agent.first_seen_at ? format(parseISO(agent.first_seen_at), 'PPpp') : '—'}
+        </div>
+      </div>
+      <div>
+        <div className="text-slate-500 uppercase tracking-wider mb-1">Source IP</div>
+        <div className="text-slate-300 font-mono">{agent.source_ip ?? '—'}</div>
+      </div>
+      <div>
+        <div className="text-slate-500 uppercase tracking-wider mb-1">Labels</div>
+        <div className="text-slate-300">
+          {Object.keys(agent.labels ?? {}).length > 0
+            ? Object.entries(agent.labels).map(([k, v]) => (
+                <span key={k} className="inline-block mr-1 mb-1 px-1.5 py-0.5 bg-slate-700 rounded text-slate-300">
+                  {k}={String(v)}
+                </span>
+              ))
+            : '—'}
+        </div>
+      </div>
+      <div>
+        <div className="text-slate-500 uppercase tracking-wider mb-1">Last Error</div>
+        <div className="text-slate-300">
+          {agent.last_error_at ? format(parseISO(agent.last_error_at), 'PPpp') : '—'}
+        </div>
+      </div>
+      <div>
+        <div className="text-slate-500 uppercase tracking-wider mb-1">Error Count</div>
+        <div className={agent.error_count > 0 ? 'text-red-400' : 'text-slate-300'}>
+          {agent.error_count}
+        </div>
+      </div>
+      <div>
+        <div className="text-slate-500 uppercase tracking-wider mb-1">Total Cost</div>
+        <div className="text-slate-300 tabular-nums">${(agent.total_cost_usd ?? 0).toFixed(6)}</div>
+      </div>
+    </div>
+  )
 }
 
-export default function AgentsPage() {
-  const { data, isLoading, refetch } = useAgents()
-  const retireAgent = useRetireAgent()
-  const updateAgent = useUpdateAgent()
+// ── Agents row ────────────────────────────────────────────────────────────────
 
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [editForm, setEditForm] = useState<{ name: string; status: string }>({ name: '', status: '' })
-
-  const agents = data?.data ?? []
-
-  // Bar chart data — top agents by requests
-  const chartData = [...agents]
-    .sort((a, b) => (b.total_requests || 0) - (a.total_requests || 0))
-    .slice(0, 10)
-    .map(a => ({
-      name: a.id?.slice(0, 16) || 'unknown',
-      requests: a.total_requests || 0,
-      cost: a.total_cost_usd || 0,
-    }))
+function AgentRow({ agent }: { agent: Agent }) {
+  const [expanded, setExpanded] = useState(false)
 
   return (
-    <div className="flex-1 overflow-y-auto p-6">
-      <div className="max-w-[1400px] mx-auto space-y-4">
-
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-bold text-slate-900">Agents</h2>
-            <p className="text-xs text-slate-400">
-              {agents.length} agent{agents.length !== 1 ? 's' : ''} discovered
-            </p>
+    <>
+      <tr
+        className="cursor-pointer hover:bg-slate-700/20 transition-colors"
+        onClick={() => setExpanded(e => !e)}
+      >
+        <td className="px-4 py-3">
+          {expanded
+            ? <ChevronDown className="w-4 h-4 text-slate-400" />
+            : <ChevronRight className="w-4 h-4 text-slate-400" />}
+        </td>
+        <td className="px-4 py-3">
+          <div className="flex flex-col">
+            <span className="text-sm font-medium text-slate-200">{agent.name ?? 'Unnamed'}</span>
+            <span className="text-xs text-slate-500 font-mono">{agent.id.slice(0, 16)}…</span>
           </div>
-          <button
-            onClick={() => refetch()}
-            className="btn-secondary flex items-center gap-1.5 text-xs"
+        </td>
+        <td className="px-4 py-3 text-sm text-slate-400">{agent.framework ?? '—'}</td>
+        <td className="px-4 py-3">
+          <StatusBadge value={agent.status} />
+        </td>
+        <td className="px-4 py-3 text-sm text-slate-300 tabular-nums text-right">
+          {(agent.total_requests ?? 0).toLocaleString()}
+        </td>
+        <td className="px-4 py-3 text-sm text-slate-300 tabular-nums text-right">
+          {(agent.total_tokens ?? 0).toLocaleString()}
+        </td>
+        <td className="px-4 py-3 text-sm text-slate-300 tabular-nums text-right">
+          ${(agent.total_cost_usd ?? 0).toFixed(4)}
+        </td>
+        <td className="px-4 py-3 text-xs text-slate-500">
+          {agent.last_model_used ?? '—'}
+        </td>
+        <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">
+          {agent.last_seen_at
+            ? format(parseISO(agent.last_seen_at), 'MMM d, HH:mm')
+            : '—'}
+        </td>
+      </tr>
+      {expanded && (
+        <tr>
+          <td colSpan={9} className="p-0">
+            <AgentDetail agent={agent} />
+          </td>
+        </tr>
+      )}
+    </>
+  )
+}
+
+// ── Agents page ───────────────────────────────────────────────────────────────
+
+const STATUS_OPTIONS: (AgentStatus | 'all')[] = ['all', 'active', 'idle', 'error', 'blocked', 'retired']
+
+export function AgentsPage() {
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<AgentStatus | 'all'>('all')
+
+  const { data, isLoading, refetch, isFetching } = useAgents()
+
+  const agents = data?.agents ?? []
+  const filtered = agents.filter(a => {
+    const matchSearch = !search ||
+      (a.name ?? '').toLowerCase().includes(search.toLowerCase()) ||
+      a.id.toLowerCase().includes(search.toLowerCase())
+    const matchStatus = statusFilter === 'all' || a.status === statusFilter
+    return matchSearch && matchStatus
+  })
+
+  return (
+    <div className="space-y-4">
+      {/* Toolbar */}
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+        <div className="flex gap-3 flex-1 w-full sm:w-auto">
+          {/* Search */}
+          <div className="relative flex-1 max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search agents…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 text-sm bg-slate-800 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            />
+          </div>
+          {/* Status filter */}
+          <select
+            value={statusFilter}
+            onChange={e => setStatusFilter(e.target.value as AgentStatus | 'all')}
+            className="px-3 py-2 text-sm bg-slate-800 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-500"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+            {STATUS_OPTIONS.map(s => (
+              <option key={s} value={s}>{s === 'all' ? 'All statuses' : s}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-slate-500">{filtered.length} agents</span>
+          <button
+            onClick={() => void refetch()}
+            disabled={isFetching}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin' : ''}`} />
             Refresh
           </button>
         </div>
+      </div>
 
-        {/* Top Agents Chart */}
-        {chartData.length > 0 && (
-          <div className="bg-white border border-slate-200 rounded-xl p-5">
-            <h3 className="text-sm font-bold text-slate-700 mb-4">Top Agents by Requests</h3>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fontSize: 10, fill: '#94a3b8' }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fontSize: 10, fill: '#94a3b8' }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={50}
-                />
-                <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8 }} />
-                <Bar dataKey="requests" fill="#6366f1" radius={[4, 4, 0, 0]} name="Requests" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-
-        {/* Agent Table */}
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/50">
-                <th className="table-header text-left py-3 px-4">Agent ID</th>
-                <th className="table-header text-left py-3 px-4">Name</th>
-                <th className="table-header text-center py-3 px-4">Status</th>
-                <th className="table-header text-right py-3 px-4">Requests</th>
-                <th className="table-header text-right py-3 px-4">Tokens In</th>
-                <th className="table-header text-right py-3 px-4">Tokens Out</th>
-                <th className="table-header text-right py-3 px-4">Cost</th>
-                <th className="table-header text-left py-3 px-4">Last Seen</th>
-                <th className="table-header text-center py-3 px-4">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {agents.map((a, i) => (
-                <tr
-                  key={a.id || i}
-                  className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors"
-                >
-                  <td className="table-cell text-xs font-medium text-primary max-w-[180px] truncate">
-                    <Link to={`/agents/${a.id}`} className="hover:underline">{a.id || '\u2014'}</Link>
-                  </td>
-                  <td className="table-cell text-xs text-slate-500">
-                    {editingId === a.id ? (
-                      <input
-                        className="input-field text-xs py-1 px-2 w-40"
-                        value={editForm.name}
-                        onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
-                        placeholder="Agent name"
-                        autoFocus
-                      />
-                    ) : (
-                      <span className="text-xs text-slate-500">{a.name || '—'}</span>
-                    )}
-                  </td>
-                  <td className="table-cell text-center">
-                    {editingId === a.id ? (
-                      <select
-                        className="input-field text-xs py-1 px-2 w-28"
-                        value={editForm.status}
-                        onChange={e => setEditForm(f => ({ ...f, status: e.target.value }))}
-                      >
-                        <option value="active">active</option>
-                        <option value="blocked">blocked</option>
-                        <option value="retired">retired</option>
-                      </select>
-                    ) : (
-                      <span className={`badge ${statusColor(a.status)}`}>{a.status || 'unknown'}</span>
-                    )}
-                  </td>
-                  <td className="table-cell text-xs metric-font text-right">
-                    {fmtNum(a.total_requests)}
-                  </td>
-                  <td className="table-cell text-xs metric-font text-right">
-                    {fmtNum(a.total_tokens_in)}
-                  </td>
-                  <td className="table-cell text-xs metric-font text-right">
-                    {fmtNum(a.total_tokens_out)}
-                  </td>
-                  <td className="table-cell text-xs metric-font text-right text-slate-600">
-                    {fmtUsd(a.total_cost_usd)}
-                  </td>
-                  <td className="table-cell text-xs text-slate-400">
-                    {a.last_seen_at
-                      ? new Date(a.last_seen_at).toLocaleString([], {
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })
-                      : '—'}
-                  </td>
-                  <td className="table-cell text-center">
-                    {editingId === a.id ? (
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={async () => {
-                            await updateAgent.mutateAsync({
-                              id: a.id,
-                              body: {
-                                name: editForm.name,
-                                status: editForm.status as Agent['status'],
-                              },
-                            })
-                            setEditingId(null)
-                          }}
-                          disabled={updateAgent.isPending}
-                          className="text-xs text-emerald-600 hover:text-emerald-700 font-semibold disabled:opacity-40 transition-colors"
-                        >
-                          {updateAgent.isPending ? 'Saving…' : 'Save'}
-                        </button>
-                        <button
-                          onClick={() => setEditingId(null)}
-                          className="text-xs text-slate-400 hover:text-slate-600 font-medium transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center gap-2">
-                        {a.status === 'active' && (
-                          <button
-                            onClick={() => retireAgent.mutate(a.id)}
-                            disabled={retireAgent.isPending}
-                            className="text-xs text-red-500 hover:text-red-700 font-medium disabled:opacity-40 transition-colors"
-                          >
-                            Retire
-                          </button>
-                        )}
-                        <button
-                          onClick={() => {
-                            setEditingId(a.id)
-                            setEditForm({ name: a.name || '', status: a.status || 'active' })
-                          }}
-                          className="text-xs text-primary hover:text-primary-dark font-medium transition-colors"
-                        >
-                          Edit
-                        </button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
+      {/* Table */}
+      <div className="overflow-x-auto rounded-xl border border-slate-700">
+        <table className="w-full text-sm">
+          <thead className="bg-slate-800/80">
+            <tr>
+              <th className="px-4 py-3 w-8" />
+              {['Name / ID', 'Framework', 'Status', 'Requests', 'Tokens', 'Cost', 'Last Model', 'Last Seen'].map(h => (
+                <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">
+                  {h}
+                </th>
               ))}
-            </tbody>
-          </table>
-
-          {agents.length === 0 && !isLoading && (
-            <div className="text-center py-12 text-slate-400">
-              <Bot className="w-10 h-10 mx-auto mb-3 text-slate-300" />
-              <p className="text-sm font-medium">No agents discovered yet</p>
-              <p className="text-xs mt-1">
-                Agents are auto-registered when they send requests through the proxy
-              </p>
-            </div>
-          )}
-        </div>
-
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-700/50">
+            {isLoading ? (
+              Array.from({ length: 6 }).map((_, i) => (
+                <tr key={i} className="animate-pulse">
+                  {Array.from({ length: 9 }).map((__, j) => (
+                    <td key={j} className="px-4 py-3">
+                      <div className="h-4 bg-slate-700/50 rounded" />
+                    </td>
+                  ))}
+                </tr>
+              ))
+            ) : filtered.length === 0 ? (
+              <tr>
+                <td colSpan={9}>
+                  <EmptyState
+                    icon={Bot}
+                    title="No agents found"
+                    description="Connect your AI agents by setting SCOUT_PROXY_URL"
+                  />
+                </td>
+              </tr>
+            ) : (
+              filtered.map(agent => <AgentRow key={agent.id} agent={agent} />)
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   )

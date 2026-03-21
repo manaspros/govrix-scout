@@ -188,6 +188,14 @@ pub async fn log_request_event(ctx: &RequestContext, state: &InterceptorState) {
 
     event.raw_size_bytes = Some(ctx.request_body.len() as i64);
 
+    // ── Populate payload for PII detection and audit ─────────────────────────
+    // Only set if body is valid JSON and within 100 KB to avoid DB bloat.
+    if ctx.request_body.len() <= 100 * 1024 {
+        if let Ok(parsed) = serde_json::from_slice::<serde_json::Value>(&ctx.request_body) {
+            event.payload = Some(parsed);
+        }
+    }
+
     // ── Policy hook: compute compliance_tag ──────────────────────────────────
     event.compliance_tag = state.policy_hook.compliance_tag(&event);
 
@@ -311,6 +319,14 @@ pub async fn log_response_event(
             {
                 event.cost_usd = Some(pricing.estimate_cost(input, output));
             }
+        }
+    }
+
+    // ── Populate payload for PII detection and audit ─────────────────────────
+    // Only set if body is valid JSON and within 100 KB to avoid DB bloat.
+    if response_body.len() <= 100 * 1024 {
+        if let Ok(parsed) = serde_json::from_slice::<serde_json::Value>(response_body) {
+            event.payload = Some(parsed);
         }
     }
 

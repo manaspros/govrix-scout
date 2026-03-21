@@ -8,10 +8,100 @@
 //! Compliance fields (compliance-first skill):
 //!   session_id, timestamp, lineage_hash, compliance_tag — ALL REQUIRED.
 
+use std::fmt;
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use uuid::Uuid;
+
+// ── EventKind ─────────────────────────────────────────────────────────────────
+
+/// Structured classification of each intercepted event.
+///
+/// Uses TEXT (not a PostgreSQL ENUM) so new variants can be added without a
+/// lock-acquiring `ALTER TYPE` migration. The string representation matches
+/// the CHECK constraint in migration 009.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum EventKind {
+    /// Agent sent a prompt to an LLM provider.
+    #[serde(rename = "llm.request")]
+    LlmRequest,
+    /// LLM provider returned a completion.
+    #[serde(rename = "llm.response")]
+    LlmResponse,
+    /// Agent called a tool (MCP tools/call or function_call).
+    #[serde(rename = "tool.invoke")]
+    ToolInvoke,
+    /// Tool returned its result.
+    #[serde(rename = "tool.result")]
+    ToolResult,
+    /// Agent read a resource (MCP resources/read).
+    #[serde(rename = "resource.read")]
+    ResourceRead,
+    /// Agent wrote to a resource.
+    #[serde(rename = "resource.write")]
+    ResourceWrite,
+    /// Agent delegated to another agent (A2A outbound).
+    #[serde(rename = "agent.spawn")]
+    AgentSpawn,
+    /// A spawned agent finished and returned results (A2A inbound).
+    #[serde(rename = "agent.complete")]
+    AgentComplete,
+    /// Agent queried its memory store.
+    #[serde(rename = "memory.read")]
+    MemoryRead,
+    /// Agent updated its memory store.
+    #[serde(rename = "memory.write")]
+    MemoryWrite,
+    /// Policy engine evaluated a request (allowed).
+    #[serde(rename = "policy.check")]
+    PolicyCheck,
+    /// Policy engine blocked a request.
+    #[serde(rename = "policy.block")]
+    PolicyBlock,
+    /// New persistent session created.
+    #[serde(rename = "session.start")]
+    SessionStart,
+    /// Session completed or expired.
+    #[serde(rename = "session.end")]
+    SessionEnd,
+    /// Any failed operation.
+    #[serde(rename = "error")]
+    Error,
+}
+
+impl Default for EventKind {
+    fn default() -> Self {
+        EventKind::LlmRequest
+    }
+}
+
+impl fmt::Display for EventKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            EventKind::LlmRequest => "llm.request",
+            EventKind::LlmResponse => "llm.response",
+            EventKind::ToolInvoke => "tool.invoke",
+            EventKind::ToolResult => "tool.result",
+            EventKind::ResourceRead => "resource.read",
+            EventKind::ResourceWrite => "resource.write",
+            EventKind::AgentSpawn => "agent.spawn",
+            EventKind::AgentComplete => "agent.complete",
+            EventKind::MemoryRead => "memory.read",
+            EventKind::MemoryWrite => "memory.write",
+            EventKind::PolicyCheck => "policy.check",
+            EventKind::PolicyBlock => "policy.block",
+            EventKind::SessionStart => "session.start",
+            EventKind::SessionEnd => "session.end",
+            EventKind::Error => "error",
+        };
+        write!(f, "{}", s)
+    }
+}
+
+// ── Direction ─────────────────────────────────────────────────────────────────
 
 /// Direction of the intercepted traffic.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -160,6 +250,37 @@ pub struct AgentEvent {
     /// Error message if the upstream request failed.
     pub error_message: Option<String>,
 
+    // ── Agent Tracing (Migration 009) ─────────────────────────────────────────
+    /// Structured event classification (default: LlmRequest).
+    pub event_kind: EventKind,
+
+    /// Per-event unique span UUID, auto-generated.
+    pub span_id: Uuid,
+
+    /// Parent span_id — links tool.invoke spans to the LLM response that triggered them.
+    pub parent_span_id: Option<Uuid>,
+
+    /// Govrix internal trace UUID grouping all spans in one agent task run.
+    pub trace_id: Option<Uuid>,
+
+    /// For tool.invoke / tool.result events: the MCP tool name called.
+    pub tool_name: Option<String>,
+
+    /// Full JSONB arguments passed to the MCP tool (tools/call params.arguments).
+    pub tool_args: Option<JsonValue>,
+
+    /// Full JSONB result returned by the MCP tool (tools/call result).
+    pub tool_result: Option<JsonValue>,
+
+    /// MCP server that received this tool call (from X-MCP-Server header or URL hostname).
+    pub mcp_server: Option<String>,
+
+    /// Risk score [0.0, 100.0] computed by the interceptor risk scorer.
+    pub risk_score: Option<f32>,
+
+    /// W3C traceparent trace-id (hex) from inbound requests, for external correlation.
+    pub external_trace_id: Option<String>,
+
     // ── Audit ─────────────────────────────────────────────────────────────────
     /// When this record was inserted into the database.
     pub created_at: DateTime<Utc>,
@@ -209,6 +330,17 @@ impl AgentEvent {
             compliance_tag: compliance_tag.into(),
             tags: JsonValue::Object(Default::default()),
             error_message: None,
+            // Tracing fields (migration 009)
+            event_kind: EventKind::default(),
+            span_id: Uuid::now_v7(),
+            parent_span_id: None,
+            trace_id: None,
+            tool_name: None,
+            tool_args: None,
+            tool_result: None,
+            mcp_server: None,
+            risk_score: None,
+            external_trace_id: None,
             created_at: now,
         }
     }

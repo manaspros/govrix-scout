@@ -1,12 +1,11 @@
-//! Govrix Platform — commercial AI agent governance server.
+//! Govrix Platform — AI agent governance server.
 //!
 //! Embeds the Scout proxy engine and adds:
-//! - License validation and tier enforcement
 //! - Policy evaluation hooks (before request forwarding)
 //! - PII masking (inline, not just detection)
 //! - Multi-tenant isolation
 //!
-//! Startup: loads Platform config, validates license, initializes Scout proxy.
+//! Startup: loads Platform config, initializes Scout proxy.
 
 mod api;
 
@@ -81,7 +80,6 @@ async fn mtls_forward(
 use govrix_scout_common::config::Config;
 use govrix_scout_proxy::{api as scout_api, events, policy::PolicyHook, proxy};
 use govrix_common::config::PlatformConfig;
-use govrix_common::license::{self, LicenseTier};
 use govrix_identity::{ca::CertificateAuthority, mtls::MtlsConfig};
 use govrix_policy::budget::{BudgetLimit, BudgetTracker};
 use govrix_policy::engine::PolicyEngine;
@@ -105,43 +103,6 @@ async fn main() -> anyhow::Result<()> {
         "Govrix Platform starting"
     );
 
-    // ── License validation ──────────────────────────────────────────────────
-    let license_key = std::env::var("GOVRIX_LICENSE_KEY").ok();
-    let license_info = license::validate_license(license_key.as_deref());
-    tracing::info!(
-        tier = ?license_info.tier,
-        max_agents = license_info.max_agents,
-        policy_enabled = license_info.policy_enabled,
-        "license validated"
-    );
-
-    // ── Identity / mTLS ─────────────────────────────────────────────────────
-    let (mtls_config, platform_ca) = if license_info.a2a_identity_enabled {
-        let org_name = license_info.org_id.as_deref().unwrap_or("govrix");
-        match CertificateAuthority::generate(org_name) {
-            Ok(ca) => {
-                tracing::info!(org = org_name, "CA generated, mTLS enabled");
-                let mtls = MtlsConfig::with_ca(ca.clone());
-                (mtls, Some(Arc::new(ca)))
-            }
-            Err(e) => {
-                tracing::warn!(error = %e, "CA generation failed, falling back to mTLS disabled");
-                (MtlsConfig::default(), None)
-            }
-        }
-    } else {
-        tracing::info!("mTLS disabled (license tier)");
-        (MtlsConfig::default(), None)
-    };
-    let mtls_config = Arc::new(mtls_config);
-
-    // ── Tenant registry ──────────────────────────────────────────────────────
-    let tenant_registry = Arc::new(govrix_common::tenant_registry::TenantRegistry::new());
-    tracing::info!(
-        tenants = tenant_registry.count(),
-        "tenant registry initialized"
-    );
-
     // ── Scout configuration ─────────────────────────────────────────────────
     let config_path = std::env::var("GOVRIX_CONFIG")
         .unwrap_or_else(|_| "config/govrix.default.toml".to_string());
@@ -157,6 +118,33 @@ async fn main() -> anyhow::Result<()> {
     let govrix_config_path =
         std::env::var("GOVRIX_CONFIG").unwrap_or_else(|_| "config/govrix.default.toml".to_string());
     let platform_cfg = PlatformConfig::load(&govrix_config_path);
+
+    // ── Identity / mTLS ─────────────────────────────────────────────────────
+    let (mtls_config, platform_ca) = if platform_cfg.platform.a2a_identity_enabled {
+        let org_name = "govrix";
+        match CertificateAuthority::generate(org_name) {
+            Ok(ca) => {
+                tracing::info!(org = org_name, "CA generated, mTLS enabled");
+                let mtls = MtlsConfig::with_ca(ca.clone());
+                (mtls, Some(Arc::new(ca)))
+            }
+            Err(e) => {
+                tracing::warn!(error = %e, "CA generation failed, falling back to mTLS disabled");
+                (MtlsConfig::default(), None)
+            }
+        }
+    } else {
+        tracing::info!("mTLS disabled (config)");
+        (MtlsConfig::default(), None)
+    };
+    let mtls_config = Arc::new(mtls_config);
+
+    // ── Tenant registry ──────────────────────────────────────────────────────
+    let tenant_registry = Arc::new(govrix_common::tenant_registry::TenantRegistry::new());
+    tracing::info!(
+        tenants = tenant_registry.count(),
+        "tenant registry initialized"
+    );
 
     // ── Database pool ───────────────────────────────────────────────────────
     let pool = match govrix_scout_store::connect(&config.database).await {
@@ -189,32 +177,13 @@ async fn main() -> anyhow::Result<()> {
 
     // ── Policy engine ────────────────────────────────────────────────────────
     let policy_engine = Arc::new(RwLock::new(PolicyEngine::new()));
-    let pii_enabled = license_info.policy_enabled;
+    let pii_enabled = true;
 
     // ── Budget tracker ───────────────────────────────────────────────────────
-    // Priority: explicit config values override tier-based defaults.
-    // Community tier gets no global limit (agent count is enforced elsewhere).
     let mut budget = BudgetTracker::new();
 
-    let config_token_limit = platform_cfg.platform.global_token_limit;
-    let config_cost_limit = platform_cfg.platform.global_cost_limit_usd;
-
-    // Apply tier-based defaults when no explicit config limit is set.
-    let tier_token_limit: Option<u64> = match &license_info.tier {
-        LicenseTier::Community => None,
-        LicenseTier::Starter => Some(50_000_000), // 50M tokens
-        LicenseTier::Growth => Some(500_000_000), // 500M tokens
-        LicenseTier::Enterprise => None,          // unlimited by default
-    };
-    let tier_cost_limit: Option<f64> = match &license_info.tier {
-        LicenseTier::Community => None,
-        LicenseTier::Starter => Some(500.0),  // $500 USD
-        LicenseTier::Growth => Some(5_000.0), // $5,000 USD
-        LicenseTier::Enterprise => None,      // unlimited by default
-    };
-
-    let effective_token_limit = config_token_limit.or(tier_token_limit);
-    let effective_cost_limit = config_cost_limit.or(tier_cost_limit);
+    let effective_token_limit = platform_cfg.platform.global_token_limit;
+    let effective_cost_limit = platform_cfg.platform.global_cost_limit_usd;
 
     if effective_token_limit.is_some() || effective_cost_limit.is_some() {
         budget.set_global_limit(BudgetLimit {
@@ -321,13 +290,13 @@ async fn main() -> anyhow::Result<()> {
     let api_config = config.clone();
     let api_metrics = metrics.clone();
     let platform_state = Arc::new(api::PlatformState {
-        license_tier: license_info.tier.clone(),
-        max_agents: license_info.max_agents,
-        policy_enabled: license_info.policy_enabled,
-        pii_masking_enabled: license_info.pii_masking_enabled,
-        compliance_enabled: license_info.compliance_enabled,
-        a2a_identity_enabled: license_info.a2a_identity_enabled,
-        retention_days: license_info.retention_days,
+        license_tier: "oss".to_string(),
+        max_agents: u32::MAX,
+        policy_enabled: true,
+        pii_masking_enabled: true,
+        compliance_enabled: true,
+        a2a_identity_enabled: platform_cfg.platform.a2a_identity_enabled,
+        retention_days: 365,
         mtls_enabled: mtls_config.is_mtls_enabled(),
         audit_trail_enabled: pool.is_some(),
         budget_tracking_enabled: effective_token_limit.is_some() || effective_cost_limit.is_some(),

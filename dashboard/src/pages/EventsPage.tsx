@@ -1,246 +1,280 @@
-import React, { useState } from 'react'
-import { Radio, ChevronDown, ChevronUp, Filter, RefreshCw } from 'lucide-react'
-import { useEvents } from '../api/hooks'
-import type { AgentEvent } from '../api/types'
+import { useState } from 'react'
+import { format, parseISO } from 'date-fns'
+import { Activity, RefreshCw, X } from 'lucide-react'
+import { useEvents } from '@/api/hooks'
+import { StatusBadge } from '@/components/common/StatusBadge'
+import { EmptyState } from '@/components/common/EmptyState'
+import { JsonViewer } from '@/components/common/JsonViewer'
+import { TimeRangePicker, timeRangeToSince } from '@/components/common/TimeRangePicker'
+import type { TimeRange } from '@/components/common/TimeRangePicker'
+import type { AgentEvent } from '@/api/types'
 
-const PAGE_SIZE = 25
+// ── Event detail drawer ───────────────────────────────────────────────────────
 
-const fmtTime = (ts: string | undefined): string => {
-  if (!ts) return '—'
-  const d = new Date(ts)
-  return d.toLocaleString([], {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  })
+interface EventDetailProps {
+  event: AgentEvent
+  onClose: () => void
 }
 
-const statusBadge = (code: number | null | undefined): string => {
-  if (code == null) return 'badge badge-neutral'
-  if (code >= 400) return 'badge badge-danger'
-  if (code >= 300) return 'badge badge-warning'
-  return 'badge badge-success'
-}
-
-interface ExpandedRowProps {
-  ev: AgentEvent
-}
-
-function ExpandedRow({ ev }: ExpandedRowProps) {
+function EventDetail({ event, onClose }: EventDetailProps) {
   return (
-    <tr className="bg-slate-50/70">
-      <td colSpan={9} className="px-6 py-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-          <div>
-            <span className="text-slate-400 block mb-1">Session ID</span>
-            <span className="metric-font text-slate-600 text-[11px]">{ev.session_id || '—'}</span>
+    <div className="fixed inset-y-0 right-0 w-full max-w-lg bg-slate-900 border-l border-slate-700 flex flex-col shadow-2xl z-50">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700 shrink-0">
+        <div>
+          <div className="text-sm font-semibold text-slate-100">Event Detail</div>
+          <div className="text-xs text-slate-500 font-mono mt-0.5">{event.id}</div>
+        </div>
+        <button
+          onClick={onClose}
+          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-700 transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-5 space-y-4">
+        {/* Core fields */}
+        <div className="grid grid-cols-2 gap-3 text-xs">
+          {[
+            ['Session', event.session_id],
+            ['Agent', event.agent_id],
+            ['Kind', event.kind],
+            ['Protocol', event.protocol],
+            ['Model', event.model ?? '—'],
+            ['Status', event.status_code?.toString() ?? '—'],
+            ['Finish Reason', event.finish_reason ?? '—'],
+            ['Upstream', event.upstream_target],
+          ].map(([label, value]) => (
+            <div key={label} className="bg-slate-800 rounded-lg p-2.5">
+              <div className="text-slate-500 uppercase tracking-wider mb-1">{label}</div>
+              <div className="text-slate-200 font-mono break-all">{value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Token / cost / latency */}
+        <div className="grid grid-cols-3 gap-3 text-xs">
+          <div className="bg-slate-800 rounded-lg p-2.5 text-center">
+            <div className="text-slate-500 mb-1">Input tokens</div>
+            <div className="text-slate-200 font-bold tabular-nums">{event.input_tokens?.toLocaleString() ?? '—'}</div>
           </div>
-          <div>
-            <span className="text-slate-400 block mb-1">Protocol</span>
-            <span className="text-slate-600">{ev.protocol || '—'}</span>
+          <div className="bg-slate-800 rounded-lg p-2.5 text-center">
+            <div className="text-slate-500 mb-1">Output tokens</div>
+            <div className="text-slate-200 font-bold tabular-nums">{event.output_tokens?.toLocaleString() ?? '—'}</div>
           </div>
-          <div>
-            <span className="text-slate-400 block mb-1">Input / Output Tokens</span>
-            <span className="metric-font text-slate-600">
-              {ev.input_tokens ?? '—'} / {ev.output_tokens ?? '—'}
-            </span>
+          <div className="bg-slate-800 rounded-lg p-2.5 text-center">
+            <div className="text-slate-500 mb-1">Latency</div>
+            <div className="text-slate-200 font-bold tabular-nums">
+              {event.latency_ms != null ? `${event.latency_ms}ms` : '—'}
+            </div>
           </div>
-          <div>
-            <span className="text-slate-400 block mb-1">Lineage Hash</span>
-            <span className="metric-font text-slate-600 text-[11px]">
-              {ev.lineage_hash ? `${ev.lineage_hash.slice(0, 16)}...` : '—'}
-            </span>
+          <div className="bg-slate-800 rounded-lg p-2.5 text-center col-span-2">
+            <div className="text-slate-500 mb-1">Cost</div>
+            <div className="text-emerald-400 font-bold tabular-nums">
+              {event.cost_usd != null ? `$${event.cost_usd.toFixed(8)}` : '—'}
+            </div>
           </div>
-          <div>
-            <span className="text-slate-400 block mb-1">Compliance Tag</span>
-            <span className="badge badge-info">{ev.compliance_tag || '—'}</span>
-          </div>
-          <div>
-            <span className="text-slate-400 block mb-1">Latency</span>
-            <span className="text-slate-600">
-              {ev.latency_ms != null ? `${ev.latency_ms}ms` : '—'}
-            </span>
-          </div>
-          <div>
-            <span className="text-slate-400 block mb-1">PII Detected</span>
-            <span className={`badge ${ev.pii_detected ? 'badge-warning' : 'badge-neutral'}`}>
-              {ev.pii_detected ? 'Yes' : 'No'}
-            </span>
-          </div>
-          <div>
-            <span className="text-slate-400 block mb-1">Kind</span>
-            <span className="text-slate-600 text-[11px]">{ev.kind || '—'}</span>
+          <div className="bg-slate-800 rounded-lg p-2.5 text-center">
+            <div className="text-slate-500 mb-1">Raw size</div>
+            <div className="text-slate-200 font-bold tabular-nums">
+              {event.raw_size_bytes != null ? `${event.raw_size_bytes}B` : '—'}
+            </div>
           </div>
         </div>
-      </td>
-    </tr>
+
+        {/* Timestamp */}
+        <div className="text-xs text-slate-500">
+          <span className="text-slate-400 font-medium">Timestamp: </span>
+          {format(parseISO(event.timestamp), 'PPPppp')}
+        </div>
+
+        {/* Error */}
+        {event.error_message && (
+          <div className="bg-red-900/20 border border-red-700/40 rounded-lg p-3 text-xs text-red-400">
+            <div className="font-semibold mb-1">Error</div>
+            {event.error_message}
+          </div>
+        )}
+
+        {/* Payload */}
+        <JsonViewer data={event.payload} collapsed={false} />
+
+        {/* Tags */}
+        {Object.keys(event.tags ?? {}).length > 0 && (
+          <div>
+            <div className="text-xs text-slate-500 uppercase tracking-wider mb-2">Tags</div>
+            <JsonViewer data={event.tags} collapsed={false} />
+          </div>
+        )}
+      </div>
+    </div>
   )
 }
 
-export default function EventsPage() {
-  const [page, setPage] = useState(0)
-  const [expandedId, setExpandedId] = useState<string | null>(null)
-  const [modelFilter, setModelFilter] = useState('')
+// ── Events page ───────────────────────────────────────────────────────────────
+
+export function EventsPage() {
   const [agentFilter, setAgentFilter] = useState('')
+  const [kindFilter, setKindFilter] = useState('')
+  const [protocolFilter, setProtocolFilter] = useState('')
+  const [modelFilter, setModelFilter] = useState('')
+  const [timeRange, setTimeRange] = useState<TimeRange>('24h')
+  const [autoRefresh, setAutoRefresh] = useState(false)
+  const [selectedEvent, setSelectedEvent] = useState<AgentEvent | null>(null)
 
-  const { data, isLoading, refetch } = useEvents({
-    limit: PAGE_SIZE,
-    offset: page * PAGE_SIZE,
-    agent_id: agentFilter || undefined,
-  })
+  const { data, isLoading, refetch, isFetching } = useEvents(
+    {
+      agent_id: agentFilter || undefined,
+      kind: kindFilter || undefined,
+      protocol: protocolFilter || undefined,
+      model: modelFilter || undefined,
+      since: timeRangeToSince(timeRange),
+      limit: 100,
+    },
+    autoRefresh,
+  )
 
-  const allEvents = data?.data ?? []
-
-  // Client-side model filter (useEvents doesn't support model param in types)
-  const events = modelFilter
-    ? allEvents.filter(e => (e.model ?? '').toLowerCase().includes(modelFilter.toLowerCase()))
-    : allEvents
-
-  const toggle = (id: string) => setExpandedId(prev => (prev === id ? null : id))
+  const events = data?.events ?? []
 
   return (
-    <div className="flex-1 overflow-y-auto p-6">
-      <div className="max-w-[1400px] mx-auto space-y-4">
+    <div className="space-y-4">
+      {/* Toolbar */}
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap gap-2 items-center">
+          {/* Filters */}
+          {[
+            { placeholder: 'Agent ID', value: agentFilter, onChange: setAgentFilter },
+            { placeholder: 'Kind (llm, tool…)', value: kindFilter, onChange: setKindFilter },
+            { placeholder: 'Protocol', value: protocolFilter, onChange: setProtocolFilter },
+            { placeholder: 'Model', value: modelFilter, onChange: setModelFilter },
+          ].map(f => (
+            <input
+              key={f.placeholder}
+              type="text"
+              placeholder={f.placeholder}
+              value={f.value}
+              onChange={e => f.onChange(e.target.value)}
+              className="px-3 py-2 text-sm bg-slate-800 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500 w-40"
+            />
+          ))}
 
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-bold text-slate-900">Events</h2>
-            <p className="text-xs text-slate-400">Real-time proxy event stream</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => refetch()}
-              className="btn-secondary flex items-center gap-1.5 text-xs"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh
-            </button>
-          </div>
+          <TimeRangePicker value={timeRange} onChange={setTimeRange} />
+
+          {/* Auto-refresh toggle */}
+          <button
+            onClick={() => setAutoRefresh(r => !r)}
+            className={`flex items-center gap-1.5 px-3 py-2 text-xs rounded-lg border transition-colors ${
+              autoRefresh
+                ? 'bg-brand-600/20 border-brand-600/40 text-brand-400'
+                : 'bg-slate-800 border-slate-600 text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${autoRefresh ? 'animate-spin' : ''}`} />
+            {autoRefresh ? 'Live' : 'Auto-refresh'}
+          </button>
+
+          <button
+            onClick={() => void refetch()}
+            disabled={isFetching}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+
+          <span className="text-xs text-slate-500 ml-auto">{data?.total ?? 0} total</span>
         </div>
-
-        {/* Filters */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-1.5 text-xs text-slate-500">
-            <Filter className="w-3.5 h-3.5" /> Filters:
-          </div>
-          <input
-            className="input-field w-40 text-xs py-1.5"
-            placeholder="Agent ID..."
-            value={agentFilter}
-            onChange={e => { setAgentFilter(e.target.value); setPage(0) }}
-          />
-          <input
-            className="input-field w-40 text-xs py-1.5"
-            placeholder="Model..."
-            value={modelFilter}
-            onChange={e => { setModelFilter(e.target.value); setPage(0) }}
-          />
-          {(modelFilter || agentFilter) && (
-            <button
-              className="text-xs text-primary font-medium"
-              onClick={() => { setModelFilter(''); setAgentFilter(''); setPage(0) }}
-            >
-              Clear
-            </button>
-          )}
-        </div>
-
-        {/* Table */}
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/50">
-                <th className="table-header text-left py-3 px-4 w-8"></th>
-                <th className="table-header text-left py-3 px-4">Time</th>
-                <th className="table-header text-left py-3 px-4">Agent</th>
-                <th className="table-header text-left py-3 px-4">Model</th>
-                <th className="table-header text-left py-3 px-4">Provider</th>
-                <th className="table-header text-right py-3 px-4">Tokens</th>
-                <th className="table-header text-right py-3 px-4">Cost</th>
-                <th className="table-header text-right py-3 px-4">Latency</th>
-                <th className="table-header text-center py-3 px-4">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {events.map((ev, i) => (
-                <React.Fragment key={ev.id || i}>
-                  <tr
-                    className="border-b border-slate-50 hover:bg-slate-50/50 cursor-pointer transition-colors"
-                    onClick={() => toggle(ev.id)}
-                  >
-                    <td className="table-cell">
-                      {expandedId === ev.id
-                        ? <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
-                        : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
-                    </td>
-                    <td className="table-cell text-xs metric-font text-slate-500">
-                      {fmtTime(ev.timestamp)}
-                    </td>
-                    <td className="table-cell text-xs font-medium text-slate-700 max-w-[150px] truncate">
-                      {ev.agent_id || '—'}
-                    </td>
-                    <td className="table-cell text-xs text-slate-600">{ev.model || '—'}</td>
-                    <td className="table-cell text-xs text-slate-500">{ev.provider || '—'}</td>
-                    <td className="table-cell text-xs metric-font text-right text-slate-600">
-                      {ev.input_tokens != null && ev.output_tokens != null
-                        ? (ev.input_tokens + ev.output_tokens).toLocaleString()
-                        : '—'}
-                    </td>
-                    <td className="table-cell text-xs metric-font text-right text-slate-600">
-                      {ev.cost_usd != null ? `$${Number(ev.cost_usd).toFixed(5)}` : '—'}
-                    </td>
-                    <td className="table-cell text-xs metric-font text-right text-slate-600">
-                      {ev.latency_ms != null ? `${ev.latency_ms}ms` : '—'}
-                    </td>
-                    <td className="table-cell text-center">
-                      <span className={statusBadge(ev.status_code)}>
-                        {ev.status_code ?? '—'}
-                      </span>
-                    </td>
-                  </tr>
-                  {expandedId === ev.id && <ExpandedRow ev={ev} />}
-                </React.Fragment>
-              ))}
-            </tbody>
-          </table>
-
-          {events.length === 0 && !isLoading && (
-            <div className="text-center py-12 text-slate-400">
-              <Radio className="w-10 h-10 mx-auto mb-3 text-slate-300" />
-              <p className="text-sm font-medium">No events found</p>
-              <p className="text-xs mt-1">Route AI requests through the proxy on port 4000</p>
-            </div>
-          )}
-        </div>
-
-        {/* Pagination */}
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-slate-400">
-            Showing {page * PAGE_SIZE + 1}–{page * PAGE_SIZE + events.length}
-            {events.length === PAGE_SIZE ? ' (more available)' : ''}
-          </span>
-          <div className="flex items-center gap-2">
-            <button
-              className="btn-secondary text-xs py-1.5"
-              disabled={page === 0}
-              onClick={() => setPage(p => p - 1)}
-            >
-              Previous
-            </button>
-            <button
-              className="btn-secondary text-xs py-1.5"
-              disabled={events.length < PAGE_SIZE}
-              onClick={() => setPage(p => p + 1)}
-            >
-              Next
-            </button>
-          </div>
-        </div>
-
       </div>
+
+      {/* Table */}
+      <div className="overflow-x-auto rounded-xl border border-slate-700">
+        <table className="w-full text-sm">
+          <thead className="bg-slate-800/80">
+            <tr>
+              {['Timestamp', 'Agent', 'Kind', 'Protocol', 'Model', 'Tokens', 'Cost', 'Latency', 'Status'].map(h => (
+                <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-700/40">
+            {isLoading ? (
+              Array.from({ length: 8 }).map((_, i) => (
+                <tr key={i} className="animate-pulse">
+                  {Array.from({ length: 9 }).map((__, j) => (
+                    <td key={j} className="px-4 py-3">
+                      <div className="h-4 bg-slate-700/50 rounded" />
+                    </td>
+                  ))}
+                </tr>
+              ))
+            ) : events.length === 0 ? (
+              <tr>
+                <td colSpan={9}>
+                  <EmptyState
+                    icon={Activity}
+                    title="No events"
+                    description="Events will appear here as agents make API calls through the proxy."
+                  />
+                </td>
+              </tr>
+            ) : (
+              events.map(event => (
+                <tr
+                  key={event.id}
+                  onClick={() => setSelectedEvent(event)}
+                  className="cursor-pointer hover:bg-slate-700/25 transition-colors"
+                >
+                  <td className="px-4 py-2.5 text-xs text-slate-400 font-mono whitespace-nowrap">
+                    {format(parseISO(event.timestamp), 'MMM d HH:mm:ss')}
+                  </td>
+                  <td className="px-4 py-2.5 text-xs text-slate-300 max-w-[120px] truncate font-mono">
+                    {event.agent_id}
+                  </td>
+                  <td className="px-4 py-2.5"><StatusBadge value={event.kind} /></td>
+                  <td className="px-4 py-2.5"><StatusBadge value={event.protocol} /></td>
+                  <td className="px-4 py-2.5 text-xs text-slate-400 max-w-[120px] truncate">
+                    {event.model ?? '—'}
+                  </td>
+                  <td className="px-4 py-2.5 text-xs text-slate-400 tabular-nums text-right">
+                    {event.total_tokens?.toLocaleString() ?? '—'}
+                  </td>
+                  <td className="px-4 py-2.5 text-xs text-slate-400 tabular-nums text-right">
+                    {event.cost_usd != null ? `$${event.cost_usd.toFixed(6)}` : '—'}
+                  </td>
+                  <td className="px-4 py-2.5 text-xs text-slate-400 tabular-nums text-right whitespace-nowrap">
+                    {event.latency_ms != null ? `${event.latency_ms}ms` : '—'}
+                  </td>
+                  <td className="px-4 py-2.5">
+                    {event.status_code != null && (
+                      <StatusBadge
+                        value={String(event.status_code)}
+                        variant={
+                          event.status_code >= 500 ? 'error' :
+                          event.status_code >= 400 ? 'blocked' :
+                          'active'
+                        }
+                      />
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Event detail overlay */}
+      {selectedEvent && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 z-40"
+            onClick={() => setSelectedEvent(null)}
+          />
+          <EventDetail event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+        </>
+      )}
     </div>
   )
 }

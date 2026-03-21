@@ -1,291 +1,264 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
-  BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
 } from 'recharts'
-import { DollarSign, RefreshCw, TrendingUp, Layers, Activity } from 'lucide-react'
-import { useCostSummary, useCostBreakdown } from '../api/hooks'
-import type { ElementType } from 'react'
+import { format, parseISO } from 'date-fns'
+import { DollarSign, Activity, Zap } from 'lucide-react'
+import { useCostSummary, useCostBreakdown } from '@/api/hooks'
+import { TimeRangePicker, timeRangeToDays } from '@/components/common/TimeRangePicker'
+import type { TimeRange } from '@/components/common/TimeRangePicker'
+import { CardSkeleton, ChartSkeleton } from '@/components/common/LoadingState'
+import type { CostBreakdownGroup } from '@/api/types'
 
-const COLORS = ['#6366f1', '#8b5cf6', '#0ea5e9', '#10b981', '#f59e0b', '#f43f5e', '#64748b']
+// ── Stat card ─────────────────────────────────────────────────────────────────
 
-const fmtNum = (n: number | undefined | null): string =>
-  typeof n === 'number' ? n.toLocaleString() : '0'
-
-const fmtUsd = (n: number | undefined | null): string =>
-  typeof n === 'number' ? `$${n.toFixed(4)}` : '$0.00'
-
-interface KPIProps {
+interface StatCardProps {
   label: string
   value: string
-  icon: ElementType
   sub?: string
+  icon: React.ReactNode
 }
 
-const KPI = ({ label, value, icon: Icon, sub }: KPIProps) => (
-  <div className="stat-card">
-    <div className="flex items-center justify-between mb-2">
-      <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">{label}</span>
-      <Icon className="w-4 h-4 text-primary" />
+function StatCard({ label, value, sub, icon }: StatCardProps) {
+  return (
+    <div className="bg-slate-800 rounded-xl p-5 border border-slate-700/60 flex items-start gap-4">
+      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-slate-700/60 shrink-0">
+        {icon}
+      </div>
+      <div>
+        <div className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">{label}</div>
+        <div className="text-2xl font-bold text-white tabular-nums">{value}</div>
+        {sub && <div className="text-xs text-slate-500 mt-0.5">{sub}</div>}
+      </div>
     </div>
-    <div className="text-2xl font-black text-slate-900 metric-font">{value}</div>
-    {sub && <p className="text-[10px] text-slate-400 mt-1">{sub}</p>}
-  </div>
-)
+  )
+}
 
-type GroupBy = 'model' | 'agent' | 'provider'
+// ── Breakdown table ───────────────────────────────────────────────────────────
 
-export default function CostsPage() {
-  const [groupBy, setGroupBy] = useState<GroupBy>('model')
+interface BreakdownTableProps {
+  data: CostBreakdownGroup[]
+  groupLabel: string
+  isLoading: boolean
+}
 
-  const { data: summary, refetch } = useCostSummary()
-  const { data: breakdown } = useCostBreakdown()
+function BreakdownTable({ data, groupLabel, isLoading }: BreakdownTableProps) {
+  const sorted = useMemo(
+    () => [...(data ?? [])].sort((a, b) => b.cost_usd - a.cost_usd),
+    [data],
+  )
+  const total = sorted.reduce((s, r) => s + r.cost_usd, 0)
 
-  const breakdownRows = groupBy === 'model'
-    ? (breakdown?.by_model ?? [])
-    : groupBy === 'agent'
-    ? (breakdown?.by_agent ?? [])
-    : (breakdown?.by_provider ?? [])
-
-  // Bar chart data for cost by selected group (replacing timeseries AreaChart)
-  const barData = breakdownRows.slice(0, 7).map(r => ({
-    name: r.label || 'unknown',
-    cost: r.cost_usd || 0,
-    requests: r.requests || 0,
-  }))
-
-  // Donut pie data
-  const pieData = breakdownRows.slice(0, 7).map(r => ({
-    name: r.label || 'unknown',
-    value: r.cost_usd || 0,
-  }))
+  if (isLoading) return <div className="animate-pulse h-40 bg-slate-700/30 rounded-xl" />
 
   return (
-    <div className="flex-1 overflow-y-auto p-6">
-      <div className="max-w-[1400px] mx-auto space-y-6">
-
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-bold text-slate-900">Cost Analytics</h2>
-            <p className="text-xs text-slate-400">Track AI spend across models and agents</p>
-          </div>
-          <button
-            onClick={() => refetch()}
-            className="btn-secondary flex items-center gap-1.5 text-xs"
-          >
-            <RefreshCw className="w-3.5 h-3.5" /> Refresh
-          </button>
-        </div>
-
-        {/* KPI Row */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <KPI
-            label="Total Cost"
-            value={fmtUsd(summary?.total_cost_usd)}
-            icon={DollarSign}
-            sub="All time"
-          />
-          <KPI
-            label="Total Requests"
-            value={fmtNum(summary?.total_requests)}
-            icon={TrendingUp}
-            sub="All time"
-          />
-          <KPI
-            label="Tokens Used"
-            value={fmtNum(
-              (summary?.total_input_tokens ?? 0) + (summary?.total_output_tokens ?? 0)
-            )}
-            icon={Layers}
-            sub={`${fmtNum(summary?.total_input_tokens)} in / ${fmtNum(summary?.total_output_tokens)} out`}
-          />
-          <KPI
-            label="Avg Cost / Req"
-            value={fmtUsd(summary?.avg_cost_per_request)}
-            icon={Activity}
-            sub="Per request average"
-          />
-        </div>
-
-        {/* Cost Bar Chart by selected group (no timeseries API in Scout) */}
-        <div className="bg-white border border-slate-200 rounded-xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold text-slate-700">
-              Cost by {groupBy.charAt(0).toUpperCase() + groupBy.slice(1)}
-            </h3>
-            <div className="flex gap-1">
-              {(['model', 'agent', 'provider'] as GroupBy[]).map(g => (
-                <button
-                  key={g}
-                  onClick={() => setGroupBy(g)}
-                  className={`text-[10px] font-bold px-2.5 py-1 rounded-md transition-colors ${
-                    groupBy === g ? 'bg-primary text-white' : 'text-slate-400 hover:bg-slate-100'
-                  }`}
-                >
-                  {g.toUpperCase()}
-                </button>
-              ))}
-            </div>
-          </div>
-          {barData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={barData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fontSize: 10, fill: '#94a3b8' }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  yAxisId="cost"
-                  tick={{ fontSize: 10, fill: '#94a3b8' }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={55}
-                  tickFormatter={(v: number) => `$${v.toFixed(3)}`}
-                />
-                <YAxis
-                  yAxisId="reqs"
-                  orientation="right"
-                  tick={{ fontSize: 10, fill: '#94a3b8' }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={40}
-                />
-                <Tooltip
-                  contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e2e8f0' }}
-                  formatter={(v: number, name: string) =>
-                    name === 'Cost ($)' ? [`$${v.toFixed(5)}`, name] : [v.toLocaleString(), name]
-                  }
-                />
-                <Legend iconType="circle" iconSize={6} wrapperStyle={{ fontSize: 10 }} />
-                <Bar
-                  yAxisId="cost"
-                  dataKey="cost"
-                  fill="#6366f1"
-                  radius={[4, 4, 0, 0]}
-                  name="Cost ($)"
-                />
-                <Bar
-                  yAxisId="reqs"
-                  dataKey="requests"
-                  fill="#0ea5e9"
-                  radius={[4, 4, 0, 0]}
-                  name="Requests"
-                />
-              </BarChart>
-            </ResponsiveContainer>
+    <div className="overflow-x-auto rounded-xl border border-slate-700">
+      <table className="w-full text-sm">
+        <thead className="bg-slate-800/80">
+          <tr>
+            {[groupLabel, 'Requests', 'Tokens', 'Cost USD', '% of Total'].map(h => (
+              <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-700/40">
+          {sorted.length === 0 ? (
+            <tr>
+              <td colSpan={5} className="px-4 py-8 text-center text-slate-500 text-xs">
+                No data for this period
+              </td>
+            </tr>
           ) : (
-            <div className="h-[240px] flex items-center justify-center text-slate-400 text-sm">
-              No cost data available
-            </div>
+            sorted.map((row, i) => (
+              <tr key={i} className="hover:bg-slate-700/20 transition-colors">
+                <td className="px-4 py-3 text-slate-200 font-mono text-xs max-w-[200px] truncate">
+                  {row.group || '—'}
+                </td>
+                <td className="px-4 py-3 text-slate-300 tabular-nums text-right">
+                  {row.requests.toLocaleString()}
+                </td>
+                <td className="px-4 py-3 text-slate-300 tabular-nums text-right">
+                  {row.tokens.toLocaleString()}
+                </td>
+                <td className="px-4 py-3 text-emerald-400 tabular-nums text-right font-semibold">
+                  ${row.cost_usd.toFixed(6)}
+                </td>
+                <td className="px-4 py-3 text-slate-400 tabular-nums text-right">
+                  {total > 0 ? `${((row.cost_usd / total) * 100).toFixed(1)}%` : '—'}
+                </td>
+              </tr>
+            ))
           )}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+// ── Tooltip ───────────────────────────────────────────────────────────────────
+
+interface TooltipPayload {
+  name: string
+  value: number
+  color: string
+}
+
+interface CustomTooltipProps {
+  active?: boolean
+  payload?: TooltipPayload[]
+  label?: string
+}
+
+function CostTooltip({ active, payload, label }: CustomTooltipProps) {
+  if (!active || !payload?.length) return null
+  return (
+    <div className="bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 shadow-xl text-xs">
+      <div className="text-slate-400 mb-1">{label}</div>
+      {payload.map(p => (
+        <div key={p.name} className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full" style={{ background: p.color }} />
+          <span className="text-slate-300">{p.name}:</span>
+          <span className="text-white font-semibold">
+            {p.name === 'cost' ? `$${p.value.toFixed(6)}` : p.value.toLocaleString()}
+          </span>
         </div>
+      ))}
+    </div>
+  )
+}
 
-        {/* Breakdown Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Cost Breakdown Table */}
-          <div className="bg-white border border-slate-200 rounded-xl p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-bold text-slate-700">Cost Breakdown</h3>
-              <div className="flex gap-1">
-                {(['model', 'agent', 'provider'] as GroupBy[]).map(g => (
-                  <button
-                    key={g}
-                    onClick={() => setGroupBy(g)}
-                    className={`text-[10px] font-bold px-2.5 py-1 rounded-md transition-colors ${
-                      groupBy === g ? 'bg-primary text-white' : 'text-slate-400 hover:bg-slate-100'
-                    }`}
-                  >
-                    {g.toUpperCase()}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-2 max-h-[260px] overflow-y-auto">
-              {breakdownRows.map((row, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0"
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span
-                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                      style={{ background: COLORS[i % COLORS.length] }}
-                    />
-                    <span className="text-xs text-slate-700 font-medium truncate max-w-[150px]">
-                      {row.label || 'unknown'}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-4 flex-shrink-0">
-                    <span className="text-[10px] metric-font text-slate-400">
-                      {fmtNum(row.requests)} req
-                    </span>
-                    <span className="text-xs metric-font font-semibold text-slate-700">
-                      {fmtUsd(row.cost_usd)}
-                    </span>
-                  </div>
-                </div>
-              ))}
-              {breakdownRows.length === 0 && (
-                <div className="text-center py-8 text-slate-400 text-sm">
-                  No cost data available
-                </div>
-              )}
-            </div>
-          </div>
+// ── Costs page ────────────────────────────────────────────────────────────────
 
-          {/* Cost Distribution Donut */}
-          <div className="bg-white border border-slate-200 rounded-xl p-5">
-            <h3 className="text-sm font-bold text-slate-700 mb-4">
-              Distribution by {groupBy}
-            </h3>
-            {pieData.length > 0 ? (
-              <>
-                <ResponsiveContainer width="100%" height={220}>
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={55}
-                      outerRadius={85}
-                      paddingAngle={2}
-                      dataKey="value"
-                      nameKey="name"
-                    >
-                      {pieData.map((_, i) => (
-                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{ fontSize: 11, borderRadius: 8 }}
-                      formatter={(v: number) => [`$${v.toFixed(5)}`, 'Cost']}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="flex flex-wrap gap-3 mt-3 justify-center">
-                  {pieData.map((d, i) => (
-                    <span key={i} className="text-[10px] flex items-center gap-1.5">
-                      <span
-                        className="w-2 h-2 rounded-full"
-                        style={{ background: COLORS[i % COLORS.length] }}
-                      />
-                      {d.name}
-                    </span>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <div className="h-[260px] flex items-center justify-center text-slate-400 text-sm">
-                <DollarSign className="w-8 h-8 text-slate-300 mr-2" />
-                No cost data yet
-              </div>
-            )}
-          </div>
+type BreakdownTab = 'by_agent' | 'by_model' | 'by_protocol'
+
+const TABS: { key: BreakdownTab; label: string }[] = [
+  { key: 'by_agent',    label: 'By Agent' },
+  { key: 'by_model',   label: 'By Model' },
+  { key: 'by_protocol', label: 'By Protocol' },
+]
+
+export function CostsPage() {
+  const [timeRange, setTimeRange] = useState<TimeRange>('7d')
+  const [activeTab, setActiveTab] = useState<BreakdownTab>('by_agent')
+
+  const days = timeRangeToDays(timeRange)
+  const { data: summary, isLoading: summaryLoading } = useCostSummary({ days })
+  const { data: breakdown, isLoading: breakdownLoading } = useCostBreakdown({ days })
+
+  const dailyChart = useMemo(() => {
+    if (!breakdown?.daily) return []
+    return breakdown.daily.map(d => ({
+      date: format(parseISO(d.timestamp), 'MMM d'),
+      cost: d.cost_usd,
+      requests: d.requests,
+      tokens: d.tokens,
+    }))
+  }, [breakdown])
+
+  const tabData: CostBreakdownGroup[] = breakdown?.[activeTab] ?? []
+
+  return (
+    <div className="space-y-6">
+      {/* Header row */}
+      <div className="flex items-center justify-between">
+        <div />
+        <TimeRangePicker value={timeRange} onChange={setTimeRange} />
+      </div>
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {summaryLoading ? (
+          <><CardSkeleton /><CardSkeleton /><CardSkeleton /></>
+        ) : (
+          <>
+            <StatCard
+              label="Total Cost"
+              value={`$${(summary?.total_cost_usd ?? 0).toFixed(6)}`}
+              sub={`Last ${days} day${days !== 1 ? 's' : ''}`}
+              icon={<DollarSign className="w-5 h-5 text-emerald-400" />}
+            />
+            <StatCard
+              label="Total Requests"
+              value={(summary?.total_requests ?? 0).toLocaleString()}
+              sub="Intercepted calls"
+              icon={<Activity className="w-5 h-5 text-brand-400" />}
+            />
+            <StatCard
+              label="Total Tokens"
+              value={(summary?.total_tokens ?? 0).toLocaleString()}
+              sub="Input + output"
+              icon={<Zap className="w-5 h-5 text-violet-400" />}
+            />
+          </>
+        )}
+      </div>
+
+      {/* Area chart */}
+      <div className="bg-slate-800 rounded-xl border border-slate-700/60 p-5">
+        <h2 className="text-sm font-semibold text-slate-200 mb-4">Daily Cost Trend</h2>
+        {breakdownLoading ? (
+          <ChartSkeleton height={200} />
+        ) : (
+          <ResponsiveContainer width="100%" height={200}>
+            <AreaChart data={dailyChart} margin={{ top: 2, right: 4, left: -10, bottom: 0 }}>
+              <defs>
+                <linearGradient id="costGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.35} />
+                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+              <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#94a3b8' }} />
+              <YAxis
+                tick={{ fontSize: 11, fill: '#94a3b8' }}
+                tickFormatter={v => `$${Number(v).toFixed(4)}`}
+              />
+              <Tooltip content={<CostTooltip />} />
+              <Area
+                type="monotone"
+                dataKey="cost"
+                stroke="#10b981"
+                strokeWidth={2}
+                fill="url(#costGrad)"
+                dot={false}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+
+      {/* Breakdown table */}
+      <div className="bg-slate-800 rounded-xl border border-slate-700/60">
+        <div className="flex items-center gap-1 px-4 py-3 border-b border-slate-700/60">
+          {TABS.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === tab.key
+                  ? 'bg-brand-600/20 text-brand-400 ring-1 ring-brand-600/30'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
-
+        <div className="p-4">
+          <BreakdownTable
+            data={tabData}
+            groupLabel={activeTab === 'by_agent' ? 'Agent' : activeTab === 'by_model' ? 'Model' : 'Protocol'}
+            isLoading={breakdownLoading}
+          />
+        </div>
       </div>
     </div>
   )

@@ -42,6 +42,10 @@
 //!   GET    /api/v1/projects/{id}/costs
 //!   PUT    /api/v1/agents/{id}/project
 //!
+//! Traces
+//!   GET  /api/v1/traces
+//!   GET  /api/v1/traces/{trace_id}
+//!
 //! Reports
 //!   GET  /api/v1/reports/types
 //!   GET  /api/v1/reports
@@ -157,6 +161,12 @@ pub fn create_router(state: Arc<AppState>) -> Router {
             "/api/v1/agents/{id}/project",
             axum::routing::put(handlers::projects::assign_agent_project),
         )
+        // ── Traces ─────────────────────────────────────────────────────────
+        .route("/api/v1/traces", get(handlers::traces::list_traces))
+        .route(
+            "/api/v1/traces/{trace_id}",
+            get(handlers::traces::get_trace),
+        )
         // ── Reports ────────────────────────────────────────────────────────
         .route("/api/v1/reports/types", get(handlers::reports::list_types))
         .route("/api/v1/reports", get(handlers::reports::list_reports))
@@ -166,6 +176,19 @@ pub fn create_router(state: Arc<AppState>) -> Router {
         )
         // ── Config ─────────────────────────────────────────────────────────
         .route("/api/v1/config", get(handlers::config::get_config))
+        // ── Platform ──────────────────────────────────────────────────────
+        .route("/api/v1/platform/health", get(handlers::platform::platform_health))
+        .route("/api/v1/compliance/{framework}", get(handlers::platform::compliance_report))
+        .route("/api/v1/risk/overview", get(handlers::platform::risk_overview))
+        .route("/api/v1/pii/activity", get(handlers::platform::pii_activity))
+        .route("/api/v1/policies", get(handlers::platform::list_policies))
+        .route("/api/v1/policies/reload", post(handlers::platform::reload_policies))
+        .route("/api/v1/kill-switch/status", get(handlers::platform::kill_switch_status))
+        .route("/api/v1/kill-switch/history", get(handlers::platform::kill_switch_history))
+        .route("/api/v1/kill-switch/kill", post(handlers::platform::kill_agent))
+        .route("/api/v1/kill-switch/revive", post(handlers::platform::revive_agent))
+        .route("/api/v1/sessions", get(handlers::platform::list_sessions))
+        .route("/api/v1/sessions/{id}", get(handlers::platform::get_session))
         // ── State & middleware ──────────────────────────────────────────────
         .with_state(state)
         .layer(permissive_cors())
@@ -283,6 +306,8 @@ pub fn build_router() -> Router {
             "/api/v1/agents/{id}/project",
             axum::routing::put(stub_not_implemented),
         )
+        .route("/api/v1/traces", get(stub_list))
+        .route("/api/v1/traces/{trace_id}", get(stub_item))
         .route("/api/v1/reports/types", get(handlers::reports::list_types))
         .route("/api/v1/reports", get(handlers::reports::list_reports))
         .route(

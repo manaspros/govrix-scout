@@ -13,14 +13,13 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use govrix_common::license::LicenseTier;
 use govrix_common::tenant_registry::TenantRegistry;
 use govrix_policy::engine::PolicyEngine;
 use serde::{Deserialize, Serialize};
 
 /// Shared state available to all platform API handlers.
 pub struct PlatformState {
-    pub license_tier: LicenseTier,
+    pub license_tier: String,
     pub max_agents: u32,
     pub policy_enabled: bool,
     pub pii_masking_enabled: bool,
@@ -54,7 +53,7 @@ struct TenantInfo {
 
 #[derive(Serialize)]
 struct LicenseResponse {
-    tier: LicenseTier,
+    tier: String,
     max_agents: u32,
     features: LicenseFeatures,
 }
@@ -218,14 +217,14 @@ async fn reload_policies(
 /// `POST /api/v1/certs/issue`
 ///
 /// Issue a new mTLS certificate for the given agent ID, signed by the platform CA.
-/// Returns `403 Forbidden` if mTLS / CA is not enabled on this license tier.
+/// Returns `403 Forbidden` if mTLS / CA is not enabled in the platform config.
 async fn issue_cert(
     State(state): State<Arc<PlatformState>>,
     Json(req): Json<IssueCertRequest>,
 ) -> Result<Json<IssueCertResponse>, (StatusCode, String)> {
     let ca = state.ca.as_ref().ok_or((
         StatusCode::FORBIDDEN,
-        "mTLS not enabled on this license tier".to_string(),
+        "mTLS not enabled (a2a_identity_enabled is false in config)".to_string(),
     ))?;
     let cert = govrix_identity::certs::issue_agent_cert(ca, &req.agent_id)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -397,7 +396,7 @@ mod tests {
 
     fn make_state() -> Arc<PlatformState> {
         Arc::new(PlatformState {
-            license_tier: govrix_common::license::LicenseTier::Enterprise,
+            license_tier: "oss".to_string(),
             max_agents: 10,
             policy_enabled: true,
             pii_masking_enabled: false,
