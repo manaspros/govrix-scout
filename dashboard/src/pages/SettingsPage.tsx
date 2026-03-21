@@ -5,28 +5,20 @@
  */
 
 import { useState, useCallback } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   CheckCircle,
   XCircle,
   Loader2,
-  Key,
-  Eye,
-  EyeOff,
   Monitor,
   Clock,
   Globe,
   Info,
-  Shield,
-  Zap,
   Save,
-  Trash2,
   RefreshCw,
   ExternalLink,
 } from 'lucide-react'
 import { useHealth, useConfig } from '@/api/hooks'
-import { fetchPlatformHealth, fetchLicense } from '@/api/platform'
-import type { PlatformHealth, LicenseInfo } from '@/api/types'
 
 // ── Connection status indicator ───────────────────────────────────────────────
 
@@ -168,31 +160,6 @@ export function SettingsPage() {
   const { data: health } = useHealth()
   const { data: config, isLoading: configLoading } = useConfig()
 
-  // ── API Key state ─────────────────────────────────────────────────────────
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('govrix_api_key') || '')
-  const [showKey, setShowKey] = useState(false)
-  const [keySaved, setKeySaved] = useState(false)
-
-  const saveApiKey = useCallback(() => {
-    if (apiKey.trim()) {
-      localStorage.setItem('govrix_api_key', apiKey.trim())
-    } else {
-      localStorage.removeItem('govrix_api_key')
-    }
-    setKeySaved(true)
-    setTimeout(() => setKeySaved(false), 2000)
-    // Trigger a re-check of platform health
-    queryClient.invalidateQueries({ queryKey: ['platform-health'] })
-    queryClient.invalidateQueries({ queryKey: ['license'] })
-  }, [apiKey, queryClient])
-
-  const clearApiKey = useCallback(() => {
-    setApiKey('')
-    localStorage.removeItem('govrix_api_key')
-    queryClient.invalidateQueries({ queryKey: ['platform-health'] })
-    queryClient.invalidateQueries({ queryKey: ['license'] })
-  }, [queryClient])
-
   // ── Display Preferences state ─────────────────────────────────────────────
   const [compactMode, setCompactMode] = useState(() => localStorage.getItem('govrix_compact') === 'true')
   const [refreshInterval, setRefreshInterval] = useState(() => parseInt(localStorage.getItem('govrix_refresh') || '30'))
@@ -207,25 +174,6 @@ export function SettingsPage() {
     setTimeout(() => setPrefsSaved(false), 2000)
   }, [compactMode, refreshInterval, timezone])
 
-  // ── Platform health & license queries ─────────────────────────────────────
-  // Only attempt platform calls if the user has configured an API key
-  const hasApiKey = !!apiKey && apiKey !== 'govrix-local-dev'
-  const { data: platformHealth, isLoading: platformLoading, isError: platformError } = useQuery<PlatformHealth>({
-    queryKey: ['platform-health'],
-    queryFn: fetchPlatformHealth,
-    staleTime: 30_000,
-    retry: 1,
-    enabled: hasApiKey,
-  })
-
-  const { data: license, isLoading: licenseLoading } = useQuery<LicenseInfo>({
-    queryKey: ['license'],
-    queryFn: fetchLicense,
-    staleTime: 60_000,
-    retry: 1,
-    enabled: hasApiKey,
-  })
-
   // ── Version check state ───────────────────────────────────────────────────
   const [checkingUpdate, setCheckingUpdate] = useState(false)
   const [updateChecked, setUpdateChecked] = useState(false)
@@ -239,90 +187,12 @@ export function SettingsPage() {
     }, 1500)
   }, [])
 
-  const displayVersion = platformHealth?.version || health?.version || '0.1.0'
+  const displayVersion = health?.version || '0.1.0'
 
   return (
     <div className="max-w-2xl space-y-6 page-enter">
 
-      {/* ── 1. API Configuration ───────────────────────────────────────────── */}
-      <div className="card p-5 space-y-4">
-        <div className="flex items-center gap-2">
-          <Key className="w-4 h-4 text-emerald-400" />
-          <h2 className="text-sm font-semibold text-slate-200">API Configuration</h2>
-        </div>
-
-        <div className="space-y-3">
-          {/* API Key input */}
-          <div>
-            <label className="section-label mb-2 block">Platform API Key</label>
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1">
-                <input
-                  type={showKey ? 'text' : 'password'}
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="Enter your Govrix API key..."
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-colors font-mono"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowKey(!showKey)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors p-1"
-                  title={showKey ? 'Hide key' : 'Show key'}
-                >
-                  {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={saveApiKey}
-              className="btn btn-primary"
-            >
-              <Save className="w-3.5 h-3.5" />
-              {keySaved ? 'Saved' : 'Save Key'}
-            </button>
-            <button
-              onClick={clearApiKey}
-              className="btn btn-ghost"
-              disabled={!apiKey}
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              Clear
-            </button>
-          </div>
-
-          {/* Connection status indicator */}
-          <div className="flex items-center gap-2 pt-1">
-            {platformLoading ? (
-              <div className="flex items-center gap-2 text-xs text-slate-500">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Checking platform connection...
-              </div>
-            ) : platformError ? (
-              <div className="flex items-center gap-2 text-xs text-red-400">
-                <XCircle className="w-3.5 h-3.5" />
-                Platform unreachable — check your API key and server status
-              </div>
-            ) : platformHealth ? (
-              <div className="flex items-center gap-2 text-xs text-emerald-400">
-                <CheckCircle className="w-3.5 h-3.5" />
-                Connected to Govrix Platform v{platformHealth.version} ({platformHealth.license_tier} tier)
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 text-xs text-slate-500">
-                <Info className="w-3.5 h-3.5" />
-                Enter an API key to connect to the enterprise platform
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* ── 2. Display Preferences ─────────────────────────────────────────── */}
+      {/* ── 1. Display Preferences ─────────────────────────────────────────── */}
       <div className="card p-5 space-y-4">
         <div className="flex items-center gap-2">
           <Monitor className="w-4 h-4 text-emerald-400" />
@@ -431,88 +301,7 @@ export function SettingsPage() {
         )}
       </div>
 
-      {/* ── 4. License & Platform Info ─────────────────────────────────────── */}
-      <div className="card p-5 space-y-4">
-        <div className="flex items-center gap-2">
-          <Shield className="w-4 h-4 text-emerald-400" />
-          <h2 className="text-sm font-semibold text-slate-200">License & Platform</h2>
-        </div>
-
-        {licenseLoading || platformLoading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="skeleton h-5" />
-            ))}
-          </div>
-        ) : license || platformHealth ? (
-          <div className="space-y-4">
-            {/* Tier badge */}
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-400">License Tier</span>
-              <TierBadge tier={license?.tier || platformHealth?.license_tier || 'free'} />
-            </div>
-
-            {/* Max agents */}
-            <div className="flex items-center justify-between py-2 border-b border-slate-700/40">
-              <span className="text-sm text-slate-400">Max Agents</span>
-              <span className="text-sm text-slate-200 font-mono">{license?.max_agents ?? platformHealth?.max_agents ?? '-'}</span>
-            </div>
-
-            {/* Retention */}
-            {license?.retention_days != null && (
-              <div className="flex items-center justify-between py-2 border-b border-slate-700/40">
-                <span className="text-sm text-slate-400">Data Retention</span>
-                <span className="text-sm text-slate-200">{license.retention_days} days</span>
-              </div>
-            )}
-
-            {/* Platform version & uptime */}
-            {platformHealth?.version && (
-              <div className="flex items-center justify-between py-2 border-b border-slate-700/40">
-                <span className="text-sm text-slate-400">Platform Version</span>
-                <span className="text-sm text-slate-200 font-mono">v{platformHealth.version}</span>
-              </div>
-            )}
-
-            {/* Feature flags */}
-            <div>
-              <div className="section-label mb-3">Feature Flags</div>
-              <div className="flex flex-wrap gap-2">
-                <FeaturePill
-                  label="Policy Engine"
-                  enabled={platformHealth?.policy_enabled ?? license?.policy_enabled ?? false}
-                />
-                <FeaturePill
-                  label="PII Masking"
-                  enabled={platformHealth?.pii_masking_enabled ?? license?.pii_masking_enabled ?? false}
-                />
-                <FeaturePill
-                  label="Compliance"
-                  enabled={platformHealth?.compliance_enabled ?? license?.compliance_enabled ?? false}
-                />
-                <FeaturePill
-                  label="mTLS / A2A Identity"
-                  enabled={platformHealth?.mtls_enabled ?? platformHealth?.a2a_identity_enabled ?? license?.a2a_identity_enabled ?? false}
-                />
-                <FeaturePill
-                  label="Budget Tracking"
-                  enabled={platformHealth?.budget_tracking_enabled ?? false}
-                />
-                <FeaturePill
-                  label="Audit Trail"
-                  enabled={platformHealth?.audit_trail_enabled ?? false}
-                />
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="text-sm text-slate-500">
-            <p>No license information available. Configure your API key above to connect to the enterprise platform.</p>
-          </div>
-        )}
-      </div>
-
-      {/* ── 5. Proxy Configuration (read-only) ────────────────────────────── */}
+      {/* ── 3. Proxy Configuration (read-only from /api/v1/config) ─────── */}
       <div className="card p-5">
         <h2 className="text-sm font-semibold text-slate-200 mb-4">Proxy Configuration</h2>
         {configLoading ? (
@@ -523,18 +312,17 @@ export function SettingsPage() {
           </div>
         ) : config ? (
           <div>
-            <ConfigRow label="Proxy Port" value={config.proxy_port as number | undefined} />
-            <ConfigRow label="API Port" value={config.api_port as number | undefined} />
-            <ConfigRow label="Log Level" value={config.log_level as string | undefined} />
-            <ConfigRow label="Event Retention (days)" value={config.event_retention_days as number | undefined} />
-            <ConfigRow label="Agent Soft Limit" value={config.agent_soft_limit as number | undefined} />
-            <ConfigRow label="Max Body Size (bytes)" value={config.max_body_size_bytes as number | undefined} />
-            {/* Render any additional keys */}
-            {Object.entries(config)
-              .filter(([k]) => !['proxy_port','api_port','log_level','event_retention_days','agent_soft_limit','max_body_size_bytes','database_url'].includes(k))
-              .map(([k, v]) => (
-                <ConfigRow key={k} label={k} value={v as string | number | boolean | undefined} />
-              ))}
+            <ConfigRow label="Proxy Port" value={(config as any)?.proxy?.port} />
+            <ConfigRow label="API Port" value={(config as any)?.api?.port} />
+            <ConfigRow label="Upstream OpenAI" value={(config as any)?.proxy?.upstream_openai} />
+            <ConfigRow label="Upstream Anthropic" value={(config as any)?.proxy?.upstream_anthropic} />
+            <ConfigRow label="Fail Open" value={(config as any)?.proxy?.fail_open} />
+            <ConfigRow label="Upstream Timeout (ms)" value={(config as any)?.proxy?.upstream_timeout_ms} />
+            <ConfigRow label="Max Body Size (bytes)" value={(config as any)?.proxy?.max_body_tee_bytes} />
+            <ConfigRow label="Log Level" value={(config as any)?.telemetry?.log_level} />
+            <ConfigRow label="Event Retention (days)" value={(config as any)?.retention?.events_days} />
+            <ConfigRow label="Cost Retention (days)" value={(config as any)?.retention?.cost_days} />
+            <ConfigRow label="DB Max Connections" value={(config as any)?.database?.max_connections} />
           </div>
         ) : (
           <div className="text-sm text-slate-500">
@@ -553,7 +341,7 @@ export function SettingsPage() {
         <div className="space-y-3">
           <div className="flex items-center justify-between py-2 border-b border-slate-700/40">
             <span className="text-sm text-slate-400">Product</span>
-            <span className="text-sm text-slate-200 font-semibold">Govrix Enterprise</span>
+            <span className="text-sm text-slate-200 font-semibold">Govrix Scout</span>
           </div>
           <div className="flex items-center justify-between py-2 border-b border-slate-700/40">
             <span className="text-sm text-slate-400">Version</span>
@@ -591,25 +379,6 @@ export function SettingsPage() {
         </div>
       </div>
 
-      {/* ── 7. Enterprise upsell ───────────────────────────────────────────── */}
-      <div className="bg-emerald-600/5 border border-emerald-600/20 rounded-xl p-5">
-        <div className="flex items-center gap-2 mb-2">
-          <Zap className="w-4 h-4 text-emerald-400" />
-          <span className="text-sm font-semibold text-emerald-400">Govrix Platform</span>
-        </div>
-        <p className="text-xs text-slate-400 mb-3">
-          Need policy enforcement, PII masking, compliance templates, SSO, RBAC, A2A identity, or multi-cluster support? Upgrade to Govrix Platform.
-        </p>
-        <a
-          href="https://govrix.io/platform"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn btn-primary"
-        >
-          Learn about Enterprise
-          <ExternalLink className="w-3.5 h-3.5" />
-        </a>
-      </div>
     </div>
   )
 }
