@@ -16,6 +16,10 @@ COPY crates/govrix-scout-store/Cargo.toml    crates/govrix-scout-store/
 COPY crates/govrix-scout-proxy/Cargo.toml    crates/govrix-scout-proxy/
 COPY crates/govrix-scout-cli/Cargo.toml      crates/govrix-scout-cli/
 COPY crates/govrix-scout-reports/Cargo.toml  crates/govrix-scout-reports/
+COPY crates/govrix-common/Cargo.toml         crates/govrix-common/
+COPY crates/govrix-identity/Cargo.toml       crates/govrix-identity/
+COPY crates/govrix-policy/Cargo.toml         crates/govrix-policy/
+COPY crates/govrix-server/Cargo.toml         crates/govrix-server/
 
 # Stub source files so dependency layer is cached independently of real source
 RUN mkdir -p crates/govrix-scout-common/src \
@@ -27,7 +31,15 @@ RUN mkdir -p crates/govrix-scout-common/src \
     && mkdir -p crates/govrix-scout-cli/src \
     && echo 'fn main() {}' > crates/govrix-scout-cli/src/main.rs \
     && mkdir -p crates/govrix-scout-reports/src \
-    && echo 'pub fn stub() {}' > crates/govrix-scout-reports/src/lib.rs
+    && echo 'pub fn stub() {}' > crates/govrix-scout-reports/src/lib.rs \
+    && mkdir -p crates/govrix-common/src \
+    && echo 'pub fn stub() {}' > crates/govrix-common/src/lib.rs \
+    && mkdir -p crates/govrix-identity/src \
+    && echo 'pub fn stub() {}' > crates/govrix-identity/src/lib.rs \
+    && mkdir -p crates/govrix-policy/src \
+    && echo 'pub fn stub() {}' > crates/govrix-policy/src/lib.rs \
+    && mkdir -p crates/govrix-server/src \
+    && echo 'fn main() {}' > crates/govrix-server/src/main.rs
 
 # Pre-fetch and cache all crates.io dependencies
 RUN cargo fetch --locked
