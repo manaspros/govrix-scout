@@ -1,11 +1,8 @@
 /**
- * SettingsPage — API key management, display preferences, license info, and about.
- *
- * Enterprise-enhanced settings with personalization and editing capabilities.
+ * SettingsPage — display preferences, proxy config, and about.
  */
 
 import { useState, useCallback } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import {
   CheckCircle,
   XCircle,
@@ -73,42 +70,6 @@ function ConfigRow({ label, value }: ConfigRowProps) {
   )
 }
 
-// ── Feature pill ──────────────────────────────────────────────────────────────
-
-function FeaturePill({ label, enabled }: { label: string; enabled: boolean }) {
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-        enabled
-          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-          : 'bg-slate-700/40 text-slate-500 border border-slate-600/20'
-      }`}
-    >
-      <span className={`w-1.5 h-1.5 rounded-full ${enabled ? 'bg-emerald-400' : 'bg-slate-600'}`} />
-      {label}
-    </span>
-  )
-}
-
-// ── Tier badge ────────────────────────────────────────────────────────────────
-
-function TierBadge({ tier }: { tier: string }) {
-  const colors: Record<string, string> = {
-    free: 'bg-slate-700/40 text-slate-400 border-slate-600/20',
-    starter: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    professional: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-    enterprise: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-  }
-  const colorClass = colors[tier.toLowerCase()] || colors.free
-
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold border ${colorClass}`}>
-      <Shield className="w-3.5 h-3.5" />
-      {tier.charAt(0).toUpperCase() + tier.slice(1)}
-    </span>
-  )
-}
-
 // ── Toggle component ──────────────────────────────────────────────────────────
 
 function Toggle({ active, onClick }: { active: boolean; onClick: () => void }) {
@@ -156,7 +117,6 @@ const TIMEZONES = [
 // ── Settings page ─────────────────────────────────────────────────────────────
 
 export function SettingsPage() {
-  const queryClient = useQueryClient()
   const { data: health } = useHealth()
   const { data: config, isLoading: configLoading } = useConfig()
 
