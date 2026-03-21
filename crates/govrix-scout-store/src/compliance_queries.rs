@@ -50,13 +50,12 @@ pub async fn eu_ai_act_data(
     let mut result = EuAiActQueryResult::default();
 
     // 1. Total events in period
-    let row = sqlx::query(
-        "SELECT COUNT(*) AS cnt FROM events WHERE timestamp >= $1 AND timestamp < $2",
-    )
-    .bind(from)
-    .bind(to)
-    .fetch_one(pool)
-    .await?;
+    let row =
+        sqlx::query("SELECT COUNT(*) AS cnt FROM events WHERE timestamp >= $1 AND timestamp < $2")
+            .bind(from)
+            .bind(to)
+            .fetch_one(pool)
+            .await?;
     result.total_events = row.try_get::<i64, _>("cnt").unwrap_or(0);
 
     // 2. Distinct agent count
@@ -231,13 +230,12 @@ pub async fn cyber_insurance_data(
     let mut result = CyberInsuranceQueryResult::default();
 
     // 1. Total events in period
-    let row = sqlx::query(
-        "SELECT COUNT(*) AS cnt FROM events WHERE timestamp >= $1 AND timestamp < $2",
-    )
-    .bind(from)
-    .bind(to)
-    .fetch_one(pool)
-    .await?;
+    let row =
+        sqlx::query("SELECT COUNT(*) AS cnt FROM events WHERE timestamp >= $1 AND timestamp < $2")
+            .bind(from)
+            .bind(to)
+            .fetch_one(pool)
+            .await?;
     result.total_events = row.try_get::<i64, _>("cnt").unwrap_or(0);
 
     // 2. Total agents (all time)
@@ -365,13 +363,17 @@ pub async fn cyber_insurance_data(
         .iter()
         .filter_map(|r| {
             let agent_id = r.try_get::<String, _>("agent_id").ok()?;
-            let framework = r.try_get::<String, _>("framework").unwrap_or_else(|_| "unknown".to_string());
+            let framework = r
+                .try_get::<String, _>("framework")
+                .unwrap_or_else(|_| "unknown".to_string());
             let first_seen = r.try_get::<DateTime<Utc>, _>("first_seen_at").ok()?;
             let last_seen = r.try_get::<DateTime<Utc>, _>("last_seen_at").ok()?;
             let request_count = r.try_get::<i64, _>("total_requests").unwrap_or(0);
             let total_cost_usd = r.try_get::<f64, _>("total_cost_usd").unwrap_or(0.0);
             let avg_risk_score = r.try_get::<f32, _>("avg_risk").unwrap_or(0.0);
-            let status = r.try_get::<String, _>("status").unwrap_or_else(|_| "unknown".to_string());
+            let status = r
+                .try_get::<String, _>("status")
+                .unwrap_or_else(|_| "unknown".to_string());
             Some(AgentRow {
                 agent_id,
                 framework,
@@ -418,11 +420,12 @@ pub async fn cyber_insurance_data(
                 "anomaly"
             };
 
-            let action_taken = if event_kind == "policy.block" || compliance_tag.starts_with("block:") {
-                "blocked"
-            } else {
-                "logged"
-            };
+            let action_taken =
+                if event_kind == "policy.block" || compliance_tag.starts_with("block:") {
+                    "blocked"
+                } else {
+                    "logged"
+                };
 
             Some(IncidentRow {
                 incident_type: incident_type.to_string(),

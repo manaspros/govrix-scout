@@ -112,7 +112,7 @@ impl LoopDetector {
         let now = Instant::now();
         let cutoff = now - Duration::from_secs(self.window_secs);
 
-        let calls = self.windows.entry(key).or_insert_with(VecDeque::new);
+        let calls = self.windows.entry(key).or_default();
 
         // Evict timestamps outside the window
         while let Some(&front) = calls.front() {
@@ -145,7 +145,8 @@ impl LoopDetector {
 
     /// Clear the loop window for a given agent and tool (e.g. after session end).
     pub fn clear(&mut self, agent_id: &str, tool_name: &str) {
-        self.windows.remove(&(agent_id.to_string(), tool_name.to_string()));
+        self.windows
+            .remove(&(agent_id.to_string(), tool_name.to_string()));
     }
 }
 
@@ -202,7 +203,7 @@ impl RiskCircuitBreaker {
         let now = Instant::now();
         let cutoff = now - Duration::from_secs(self.window_secs);
 
-        let window = self.windows.entry(agent_id.to_string()).or_insert_with(VecDeque::new);
+        let window = self.windows.entry(agent_id.to_string()).or_default();
         // Evict old entries
         while let Some(&(ts, _)) = window.front() {
             if ts < cutoff {
@@ -218,7 +219,11 @@ impl RiskCircuitBreaker {
     ///
     /// Combines `record` + `check` into one call for the hot path.
     /// Returns `Some(block)` if the circuit breaker fires, `None` otherwise.
-    pub fn record_and_check(&mut self, agent_id: &str, risk_score: f32) -> Option<CircuitBreakerBlock> {
+    pub fn record_and_check(
+        &mut self,
+        agent_id: &str,
+        risk_score: f32,
+    ) -> Option<CircuitBreakerBlock> {
         self.record(agent_id, risk_score);
         self.check(agent_id)
     }

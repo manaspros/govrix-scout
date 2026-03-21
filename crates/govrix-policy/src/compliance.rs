@@ -56,7 +56,11 @@ impl ComplianceReport {
                 framework: Framework::Soc2,
                 control_id: "CC6.1".to_string(),
                 control_name: "Logical Access Security".to_string(),
-                status: if mtls_enabled { ControlStatus::Pass } else { ControlStatus::Warn },
+                status: if mtls_enabled {
+                    ControlStatus::Pass
+                } else {
+                    ControlStatus::Warn
+                },
                 evidence: if mtls_enabled {
                     "mTLS enabled — agent identity verified via X.509 certificates".to_string()
                 } else {
@@ -67,7 +71,11 @@ impl ComplianceReport {
                 framework: Framework::Soc2,
                 control_id: "CC7.2".to_string(),
                 control_name: "System Monitoring".to_string(),
-                status: if audit_trail_enabled { ControlStatus::Pass } else { ControlStatus::Fail },
+                status: if audit_trail_enabled {
+                    ControlStatus::Pass
+                } else {
+                    ControlStatus::Fail
+                },
                 evidence: if audit_trail_enabled {
                     "Audit trail enabled — all agent API calls captured with tamper-evident hash chain".to_string()
                 } else {
@@ -78,9 +86,14 @@ impl ComplianceReport {
                 framework: Framework::Soc2,
                 control_id: "CC6.7".to_string(),
                 control_name: "Data Classification and Protection".to_string(),
-                status: if pii_masking_enabled { ControlStatus::Pass } else { ControlStatus::Warn },
+                status: if pii_masking_enabled {
+                    ControlStatus::Pass
+                } else {
+                    ControlStatus::Warn
+                },
                 evidence: if pii_masking_enabled {
-                    "PII masking enabled — SSN, email, phone, credit card, IP detected and flagged".to_string()
+                    "PII masking enabled — SSN, email, phone, credit card, IP detected and flagged"
+                        .to_string()
                 } else {
                     "PII masking disabled — sensitive data may pass through undetected".to_string()
                 },
@@ -89,18 +102,32 @@ impl ComplianceReport {
                 framework: Framework::Soc2,
                 control_id: "CC8.1".to_string(),
                 control_name: "Change Management".to_string(),
-                status: if policy_enabled { ControlStatus::Pass } else { ControlStatus::Warn },
+                status: if policy_enabled {
+                    ControlStatus::Pass
+                } else {
+                    ControlStatus::Warn
+                },
                 evidence: if policy_enabled {
-                    "Policy engine enabled — YAML rules enforce governance with hot-reload".to_string()
+                    "Policy engine enabled — YAML rules enforce governance with hot-reload"
+                        .to_string()
                 } else {
                     "Policy engine disabled — no runtime governance enforcement".to_string()
                 },
             },
         ];
 
-        let pass_count = controls.iter().filter(|c| matches!(c.status, ControlStatus::Pass)).count();
-        let fail_count = controls.iter().filter(|c| matches!(c.status, ControlStatus::Fail)).count();
-        let warn_count = controls.iter().filter(|c| matches!(c.status, ControlStatus::Warn)).count();
+        let pass_count = controls
+            .iter()
+            .filter(|c| matches!(c.status, ControlStatus::Pass))
+            .count();
+        let fail_count = controls
+            .iter()
+            .filter(|c| matches!(c.status, ControlStatus::Fail))
+            .count();
+        let warn_count = controls
+            .iter()
+            .filter(|c| matches!(c.status, ControlStatus::Warn))
+            .count();
 
         Self {
             framework: Framework::Soc2,
@@ -124,7 +151,11 @@ impl ComplianceReport {
                 framework: Framework::EuAiAct,
                 control_id: "Art.12".to_string(),
                 control_name: "Record-Keeping".to_string(),
-                status: if audit_trail_enabled { ControlStatus::Pass } else { ControlStatus::Fail },
+                status: if audit_trail_enabled {
+                    ControlStatus::Pass
+                } else {
+                    ControlStatus::Fail
+                },
                 evidence: if audit_trail_enabled {
                     "All agent interactions logged with tamper-evident hash chain".to_string()
                 } else {
@@ -135,7 +166,11 @@ impl ComplianceReport {
                 framework: Framework::EuAiAct,
                 control_id: "Art.14".to_string(),
                 control_name: "Human Oversight".to_string(),
-                status: if policy_enabled { ControlStatus::Pass } else { ControlStatus::Fail },
+                status: if policy_enabled {
+                    ControlStatus::Pass
+                } else {
+                    ControlStatus::Fail
+                },
                 evidence: if policy_enabled {
                     "Policy engine provides real-time block/allow/alert controls for human oversight".to_string()
                 } else {
@@ -146,9 +181,14 @@ impl ComplianceReport {
                 framework: Framework::EuAiAct,
                 control_id: "Art.9".to_string(),
                 control_name: "Data Governance".to_string(),
-                status: if pii_masking_enabled { ControlStatus::Pass } else { ControlStatus::Warn },
+                status: if pii_masking_enabled {
+                    ControlStatus::Pass
+                } else {
+                    ControlStatus::Warn
+                },
                 evidence: if pii_masking_enabled {
-                    "PII detection and masking active — data governance controls in place".to_string()
+                    "PII detection and masking active — data governance controls in place"
+                        .to_string()
                 } else {
                     "PII masking disabled — limited data governance".to_string()
                 },
@@ -157,18 +197,32 @@ impl ComplianceReport {
                 framework: Framework::EuAiAct,
                 control_id: "Art.15".to_string(),
                 control_name: "Accuracy and Robustness".to_string(),
-                status: if budget_tracking_enabled { ControlStatus::Pass } else { ControlStatus::Warn },
+                status: if budget_tracking_enabled {
+                    ControlStatus::Pass
+                } else {
+                    ControlStatus::Warn
+                },
                 evidence: if budget_tracking_enabled {
-                    "Budget tracking prevents runaway agents — robustness control active".to_string()
+                    "Budget tracking prevents runaway agents — robustness control active"
+                        .to_string()
                 } else {
                     "No budget limits — agents may consume unlimited resources".to_string()
                 },
             },
         ];
 
-        let pass_count = controls.iter().filter(|c| matches!(c.status, ControlStatus::Pass)).count();
-        let fail_count = controls.iter().filter(|c| matches!(c.status, ControlStatus::Fail)).count();
-        let warn_count = controls.iter().filter(|c| matches!(c.status, ControlStatus::Warn)).count();
+        let pass_count = controls
+            .iter()
+            .filter(|c| matches!(c.status, ControlStatus::Pass))
+            .count();
+        let fail_count = controls
+            .iter()
+            .filter(|c| matches!(c.status, ControlStatus::Fail))
+            .count();
+        let warn_count = controls
+            .iter()
+            .filter(|c| matches!(c.status, ControlStatus::Warn))
+            .count();
 
         Self {
             framework: Framework::EuAiAct,
@@ -188,7 +242,9 @@ impl ComplianceReport {
             "| Pass | Fail | Warn |\n|------|------|------|\n| {} | {} | {} |\n\n",
             self.pass_count, self.fail_count, self.warn_count
         ));
-        md.push_str("| Control | Name | Status | Evidence |\n|---------|------|--------|----------|\n");
+        md.push_str(
+            "| Control | Name | Status | Evidence |\n|---------|------|--------|----------|\n",
+        );
         for c in &self.controls {
             md.push_str(&format!(
                 "| {} | {} | {:?} | {} |\n",

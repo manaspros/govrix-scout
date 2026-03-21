@@ -118,9 +118,7 @@ pub async fn get_trace(
             tracing::error!("get_trace_spans store error: {}", e);
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(
-                    json!({ "error": "failed to fetch trace spans", "detail": e.to_string() }),
-                ),
+                Json(json!({ "error": "failed to fetch trace spans", "detail": e.to_string() })),
             );
         }
     };

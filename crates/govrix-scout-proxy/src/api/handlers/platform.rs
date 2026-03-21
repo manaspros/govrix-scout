@@ -118,11 +118,13 @@ pub async fn compliance_report(
     )
     .await;
 
-    let high_risk_count =
-        count_query(pool, "SELECT COUNT(*) AS cnt FROM events WHERE risk_score > 75").await;
+    let high_risk_count = count_query(
+        pool,
+        "SELECT COUNT(*) AS cnt FROM events WHERE risk_score > 75",
+    )
+    .await;
 
-    let budget_config_count =
-        count_query(pool, "SELECT COUNT(*) AS cnt FROM budget_config").await;
+    let budget_config_count = count_query(pool, "SELECT COUNT(*) AS cnt FROM budget_config").await;
 
     // Build framework-specific controls
     let controls = build_compliance_controls(
@@ -184,7 +186,10 @@ fn build_compliance_controls(
                 "Agent identification and authentication tracking",
                 agent_count > 0,
                 agent_count,
-                format!("{} agents tracked with identity fingerprinting", agent_count),
+                format!(
+                    "{} agents tracked with identity fingerprinting",
+                    agent_count
+                ),
             ),
             control(
                 "CC7.2",
@@ -334,7 +339,10 @@ fn build_compliance_controls(
                 "Automated policy enforcement and incident response",
                 true,
                 policy_block_count,
-                format!("{} security incidents automatically blocked", policy_block_count),
+                format!(
+                    "{} security incidents automatically blocked",
+                    policy_block_count
+                ),
             ),
         ],
         "nist-800-53" => vec![
@@ -638,9 +646,7 @@ pub async fn pii_activity(
             }
         }
 
-        let action = r
-            .try_get::<String, _>("compliance_tag")
-            .unwrap_or_default();
+        let action = r.try_get::<String, _>("compliance_tag").unwrap_or_default();
         let action_label = if action.starts_with("block:") {
             "blocked"
         } else if action.starts_with("warn:") {
@@ -1060,12 +1066,11 @@ pub async fn platform_health(State(state): State<Arc<AppState>>) -> impl IntoRes
         .and_then(|r| r.try_get::<bool, _>("ok"))
         .unwrap_or(false);
 
-    let has_budgets: bool =
-        sqlx::query("SELECT EXISTS(SELECT 1 FROM budget_config LIMIT 1) AS ok")
-            .fetch_one(pool)
-            .await
-            .and_then(|r| r.try_get::<bool, _>("ok"))
-            .unwrap_or(false);
+    let has_budgets: bool = sqlx::query("SELECT EXISTS(SELECT 1 FROM budget_config LIMIT 1) AS ok")
+        .fetch_one(pool)
+        .await
+        .and_then(|r| r.try_get::<bool, _>("ok"))
+        .unwrap_or(false);
 
     (
         StatusCode::OK,

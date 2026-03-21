@@ -99,10 +99,7 @@ impl OffHoursDetector {
                 severity: AnomalySeverity::Info,
                 description: format!(
                     "Agent '{}' active at {:02}:00 UTC (outside {}:00-{}:00 business hours)",
-                    event.agent_id,
-                    hour,
-                    self.business_hours_start,
-                    self.business_hours_end
+                    event.agent_id, hour, self.business_hours_start, self.business_hours_end
                 ),
                 detected_at: Utc::now(),
                 evidence: serde_json::json!({
@@ -155,8 +152,7 @@ impl TokenVolumeDetector {
 
     /// Check an event and update the EMA. Returns `Some(alert)` on spike.
     pub fn check(&mut self, event: &AgentEvent) -> Option<AnomalyAlert> {
-        let tokens =
-            (event.input_tokens.unwrap_or(0) + event.output_tokens.unwrap_or(0)) as f64;
+        let tokens = (event.input_tokens.unwrap_or(0) + event.output_tokens.unwrap_or(0)) as f64;
         if tokens == 0.0 {
             return None;
         }
@@ -234,10 +230,7 @@ impl NewToolDetector {
             return None;
         }
 
-        let known = self
-            .known_tools
-            .entry(event.agent_id.clone())
-            .or_default();
+        let known = self.known_tools.entry(event.agent_id.clone()).or_default();
 
         if known.contains(tool_name) {
             return None; // already seen — no alert

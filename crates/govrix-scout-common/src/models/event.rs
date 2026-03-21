@@ -22,10 +22,11 @@ use uuid::Uuid;
 /// Uses TEXT (not a PostgreSQL ENUM) so new variants can be added without a
 /// lock-acquiring `ALTER TYPE` migration. The string representation matches
 /// the CHECK constraint in migration 009.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum EventKind {
     /// Agent sent a prompt to an LLM provider.
+    #[default]
     #[serde(rename = "llm.request")]
     LlmRequest,
     /// LLM provider returned a completion.
@@ -70,12 +71,6 @@ pub enum EventKind {
     /// Any failed operation.
     #[serde(rename = "error")]
     Error,
-}
-
-impl Default for EventKind {
-    fn default() -> Self {
-        EventKind::LlmRequest
-    }
 }
 
 impl fmt::Display for EventKind {

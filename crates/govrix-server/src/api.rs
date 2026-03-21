@@ -329,7 +329,9 @@ async fn require_api_key(req: Request<Body>, next: Next) -> Response {
                 Err(_) => {
                     return (
                         StatusCode::UNAUTHORIZED,
-                        Json(serde_json::json!({ "error": "invalid authorization header encoding" })),
+                        Json(
+                            serde_json::json!({ "error": "invalid authorization header encoding" }),
+                        ),
                     )
                         .into_response();
                 }

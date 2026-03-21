@@ -17,10 +17,7 @@ use std::sync::{Arc, RwLock};
 /// This implements TLS termination: Enterprise agents connect via TLS/mTLS on port 4443,
 /// and their requests are forwarded to the Scout proxy (port 4000) which handles policy
 /// enforcement, budget checks, and event capture.
-async fn mtls_forward(
-    req: axum::extract::Request,
-    proxy_port: u16,
-) -> axum::response::Response {
+async fn mtls_forward(req: axum::extract::Request, proxy_port: u16) -> axum::response::Response {
     use axum::body::Body;
     use axum::http::StatusCode;
     use axum::response::IntoResponse;
@@ -40,8 +37,7 @@ async fn mtls_forward(
     let path_and_query = uri.path_and_query().map(|p| p.as_str()).unwrap_or("/");
     let target_url = format!("http://127.0.0.1:{proxy_port}{path_and_query}");
 
-    let method = reqwest::Method::from_bytes(method_str.as_bytes())
-        .unwrap_or(reqwest::Method::GET);
+    let method = reqwest::Method::from_bytes(method_str.as_bytes()).unwrap_or(reqwest::Method::GET);
 
     let mut builder = client.request(method, &target_url).body(body_bytes);
     for (name, value) in headers.iter() {
@@ -66,24 +62,28 @@ async fn mtls_forward(
                 builder = builder.header(name.as_str(), value.as_bytes());
             }
             let body_bytes = resp.bytes().await.unwrap_or_default();
-            builder.body(Body::from(body_bytes)).unwrap_or_else(|_| {
-                StatusCode::INTERNAL_SERVER_ERROR.into_response()
-            })
+            builder
+                .body(Body::from(body_bytes))
+                .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response())
         }
         Err(e) => {
             tracing::warn!(error = %e, target = %target_url, "mTLS forward failed");
-            (StatusCode::BAD_GATEWAY, format!("upstream proxy error: {e}")).into_response()
+            (
+                StatusCode::BAD_GATEWAY,
+                format!("upstream proxy error: {e}"),
+            )
+                .into_response()
         }
     }
 }
 
-use govrix_scout_common::config::Config;
-use govrix_scout_proxy::{api as scout_api, events, policy::PolicyHook, proxy};
 use govrix_common::config::PlatformConfig;
 use govrix_identity::{ca::CertificateAuthority, mtls::MtlsConfig};
 use govrix_policy::budget::{BudgetLimit, BudgetTracker};
 use govrix_policy::engine::PolicyEngine;
 use govrix_policy::hook::GovrixPolicyHook;
+use govrix_scout_common::config::Config;
+use govrix_scout_proxy::{api as scout_api, events, policy::PolicyHook, proxy};
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
@@ -104,8 +104,8 @@ async fn main() -> anyhow::Result<()> {
     );
 
     // ── Scout configuration ─────────────────────────────────────────────────
-    let config_path = std::env::var("GOVRIX_CONFIG")
-        .unwrap_or_else(|_| "config/govrix.default.toml".to_string());
+    let config_path =
+        std::env::var("GOVRIX_CONFIG").unwrap_or_else(|_| "config/govrix.default.toml".to_string());
     let config = Config::load_or_default(&config_path);
 
     tracing::info!(
@@ -253,9 +253,7 @@ async fn main() -> anyhow::Result<()> {
         tokio::spawn(async move {
             let app = axum::Router::new()
                 .route("/health", axum::routing::get(|| async { "mTLS OK" }))
-                .fallback(move |req: axum::extract::Request| {
-                    mtls_forward(req, inner_proxy_port)
-                });
+                .fallback(move |req: axum::extract::Request| mtls_forward(req, inner_proxy_port));
             if let Err(e) = axum_server::bind_rustls(mtls_addr, tls_config)
                 .serve(app.into_make_service())
                 .await

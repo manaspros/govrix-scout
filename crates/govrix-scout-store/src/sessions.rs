@@ -125,10 +125,7 @@ pub async fn kill_session(
 /// Mark a session as completed (idle timeout or natural end).
 ///
 /// Does not set killed_at — use `kill_session` for forced terminations.
-pub async fn complete_session(
-    pool: &StorePool,
-    session_id: &str,
-) -> Result<(), sqlx::Error> {
+pub async fn complete_session(pool: &StorePool, session_id: &str) -> Result<(), sqlx::Error> {
     sqlx::query(
         r#"
         UPDATE sessions
@@ -153,7 +150,6 @@ pub async fn get_session(
     pool: &StorePool,
     session_id: &str,
 ) -> Result<Option<serde_json::Value>, sqlx::Error> {
-
     let row = sqlx::query(
         r#"
         SELECT
@@ -179,7 +175,6 @@ pub async fn list_sessions_for_agent(
     agent_id: &str,
     limit: i64,
 ) -> Result<Vec<serde_json::Value>, sqlx::Error> {
-
     let rows = sqlx::query(
         r#"
         SELECT
@@ -198,7 +193,7 @@ pub async fn list_sessions_for_agent(
     .fetch_all(pool)
     .await?;
 
-    Ok(rows.iter().map(|r| row_to_json(r)).collect())
+    Ok(rows.iter().map(row_to_json).collect())
 }
 
 /// List all active sessions, ordered by last_event_at descending.
@@ -208,7 +203,6 @@ pub async fn list_active_sessions(
     pool: &StorePool,
     limit: i64,
 ) -> Result<Vec<serde_json::Value>, sqlx::Error> {
-
     let rows = sqlx::query(
         r#"
         SELECT
@@ -226,7 +220,7 @@ pub async fn list_active_sessions(
     .fetch_all(pool)
     .await?;
 
-    Ok(rows.iter().map(|r| row_to_json(r)).collect())
+    Ok(rows.iter().map(row_to_json).collect())
 }
 
 /// List sessions with optional filters.
@@ -237,7 +231,6 @@ pub async fn list_sessions(
     limit: i64,
     offset: i64,
 ) -> Result<Vec<serde_json::Value>, sqlx::Error> {
-
     let mut conditions: Vec<String> = Vec::new();
     let mut param_idx = 1usize;
 
@@ -283,7 +276,7 @@ pub async fn list_sessions(
     q = q.bind(limit).bind(offset);
 
     let rows = q.fetch_all(pool).await?;
-    Ok(rows.iter().map(|r| row_to_json(r)).collect())
+    Ok(rows.iter().map(row_to_json).collect())
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

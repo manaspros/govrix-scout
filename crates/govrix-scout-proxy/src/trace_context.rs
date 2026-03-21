@@ -61,10 +61,7 @@ impl Default for TraceContext {
 ///
 /// If the header is absent or malformed, a fresh context with no external
 /// correlation is returned.
-pub fn process_trace_context(
-    traceparent: Option<&str>,
-    tracestate: Option<&str>,
-) -> TraceContext {
+pub fn process_trace_context(traceparent: Option<&str>, tracestate: Option<&str>) -> TraceContext {
     let parsed = traceparent.and_then(parse_traceparent);
 
     match parsed {

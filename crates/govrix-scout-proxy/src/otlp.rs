@@ -31,23 +31,17 @@ pub fn event_to_otlp_span(event: &AgentEvent) -> Value {
         full[..16].to_string()
     });
 
-    let start_nanos = event
-        .timestamp
-        .timestamp_nanos_opt()
-        .unwrap_or(0) as u64;
-    let end_nanos =
-        start_nanos + (event.latency_ms.unwrap_or(0) as u64 * 1_000_000);
+    let start_nanos = event.timestamp.timestamp_nanos_opt().unwrap_or(0) as u64;
+    let end_nanos = start_nanos + (event.latency_ms.unwrap_or(0) as u64 * 1_000_000);
 
     // Map EventKind to OTel span name using GenAI semantic conventions.
     let span_name = match event.event_kind {
-        EventKind::LlmRequest | EventKind::LlmResponse => format!(
-            "gen_ai.{}",
-            event.model.as_deref().unwrap_or("unknown")
-        ),
-        EventKind::ToolInvoke | EventKind::ToolResult => format!(
-            "tool.{}",
-            event.tool_name.as_deref().unwrap_or("unknown")
-        ),
+        EventKind::LlmRequest | EventKind::LlmResponse => {
+            format!("gen_ai.{}", event.model.as_deref().unwrap_or("unknown"))
+        }
+        EventKind::ToolInvoke | EventKind::ToolResult => {
+            format!("tool.{}", event.tool_name.as_deref().unwrap_or("unknown"))
+        }
         _ => event.event_kind.to_string(),
     };
 
@@ -122,10 +116,7 @@ pub fn event_to_otlp_span(event: &AgentEvent) -> Value {
     }
 
     // OTel status: 1 = OK, 2 = ERROR
-    let status_code = if event
-        .status_code
-        .map_or(false, |c| c >= 400)
-    {
+    let status_code = if event.status_code.is_some_and(|c| c >= 400) {
         2
     } else {
         1
@@ -266,7 +257,11 @@ mod tests {
         let event = make_event();
         let span = event_to_otlp_span(&event);
         let span_id = span["spanId"].as_str().unwrap();
-        assert_eq!(span_id.len(), 16, "OTel span_id must be 16 hex chars (8 bytes)");
+        assert_eq!(
+            span_id.len(),
+            16,
+            "OTel span_id must be 16 hex chars (8 bytes)"
+        );
     }
 
     #[test]
@@ -307,7 +302,10 @@ mod tests {
         let mut event = make_event();
         event.status_code = Some(200);
         let span = event_to_otlp_span(&event);
-        assert_eq!(span["status"]["code"], 1, "HTTP 200 should map to OTel OK (1)");
+        assert_eq!(
+            span["status"]["code"], 1,
+            "HTTP 200 should map to OTel OK (1)"
+        );
     }
 
     #[test]

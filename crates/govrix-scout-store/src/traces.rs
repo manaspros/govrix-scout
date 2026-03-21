@@ -152,7 +152,6 @@ pub async fn get_trace(
     pool: &StorePool,
     trace_id: Uuid,
 ) -> Result<Option<serde_json::Value>, sqlx::Error> {
-
     let row = sqlx::query(
         r#"
         SELECT
@@ -181,7 +180,6 @@ pub async fn get_trace_spans(
     pool: &StorePool,
     trace_id: Uuid,
 ) -> Result<Vec<serde_json::Value>, sqlx::Error> {
-
     let rows = sqlx::query(
         r#"
         SELECT
@@ -255,7 +253,6 @@ pub async fn list_traces(
     limit: i64,
     offset: i64,
 ) -> Result<Vec<serde_json::Value>, sqlx::Error> {
-
     let mut conditions: Vec<String> = Vec::new();
     let mut param_idx = 1usize;
 
@@ -302,7 +299,7 @@ pub async fn list_traces(
     q = q.bind(limit).bind(offset);
 
     let rows = q.fetch_all(pool).await?;
-    Ok(rows.iter().map(|r| row_to_json(r)).collect())
+    Ok(rows.iter().map(row_to_json).collect())
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
