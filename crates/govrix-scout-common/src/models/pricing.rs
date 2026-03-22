@@ -15,7 +15,8 @@
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use std::collections::HashMap;
-use std::sync::LazyLock;
+use std::sync::{LazyLock, Mutex};
+use std::path::Path;
 
 use super::cost::ModelPricing;
 
@@ -118,6 +119,80 @@ static DB: LazyLock<PricingDb> = LazyLock::new(|| {
     PricingDb { exact, stripped }
 });
 
+// ── Dynamic Pricing Support (from config/pricing.json) ──────────────────────────
+
+/// Dynamic pricing entries loaded from config/pricing.json at runtime.
+/// Stored as model_id → (input_per_1m_usd, output_per_1m_usd).
+type DynamicPricingCache = HashMap<String, (f64, f64)>;
+
+/// Global cache for dynamic pricing loaded from config/pricing.json.
+/// Protected by Mutex for thread-safe updates at startup.
+static DYNAMIC_PRICING: LazyLock<Mutex<DynamicPricingCache>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
+
+/// Load pricing from config/pricing.json and cache it for lookup_pricing().
+///
+/// Called once at proxy startup. Falls back gracefully if file doesn't exist
+/// or parsing fails — the embedded LiteLLM database remains available.
+///
+/// # Arguments
+/// * `pricing_file_path` - Path to config/pricing.json (e.g., "config/pricing.json")
+///
+/// # Returns
+/// * `Ok(count)` - Number of models loaded
+/// * `Err(msg)` - Error reason (but pricing.json is optional)
+pub fn init_dynamic_pricing(pricing_file_path: &Path) -> Result<usize, String> {
+    // Try to read the file.
+    let content = match std::fs::read_to_string(pricing_file_path) {
+        Ok(c) => c,
+        Err(e) => {
+            // File doesn't exist or can't be read — not an error, just use static DB.
+            return Err(format!(
+                "pricing.json not found at {:?} (will use compiled-in LiteLLM DB): {}",
+                pricing_file_path, e
+            ));
+        }
+    };
+
+    // Parse JSON schema produced by scripts/pricing/update_pricing.py.
+    #[derive(serde::Deserialize)]
+    struct PricingJson {
+        schema_version: String,
+        last_updated: String,
+        models_count: usize,
+        models: HashMap<String, ModelEntry>,
+    }
+
+    #[derive(serde::Deserialize)]
+    struct ModelEntry {
+        #[serde(default)]
+        provider: String,
+        input_per_1m_usd: f64,
+        output_per_1m_usd: f64,
+        #[serde(default)]
+        context_window: Option<usize>,
+        #[serde(default)]
+        notes: Option<String>,
+    }
+
+    let pricing_json: PricingJson = serde_json::from_str(&content)
+        .map_err(|e| format!("Invalid pricing.json JSON: {}", e))?;
+
+    // Load into the cached HashMap.
+    let mut cache = DYNAMIC_PRICING.lock().unwrap();
+    cache.clear(); // Replace any previous load in case of reload
+
+    for (model_id, entry) in &pricing_json.models {
+        cache.insert(
+            model_id.clone(),
+            (entry.input_per_1m_usd, entry.output_per_1m_usd),
+        );
+    }
+
+    let count = cache.len();
+    Ok(count)
+}
+
 /// Convert a raw `PricingEntry` (per-token f64) into a `ModelPricing` (per-1M Decimal).
 fn make_pricing(model: &str, entry: PricingEntry) -> ModelPricing {
     // Convert per-token → per-1M tokens.
@@ -206,7 +281,24 @@ fn infer_provider(model: &str) -> String {
 ///    **Reverse prefix**: shortest DB key where query is a prefix of the key
 ///    (e.g., "claude-3-5-sonnet" → "claude-3-5-sonnet-20241022"). Also checks stripped keys.
 /// 5. **Provider fallback**: keyword-based conservative mid-range pricing.
+///
+/// **Lookup order:**
+/// 1. Check dynamic pricing from config/pricing.json (if loaded via init_dynamic_pricing)
+/// 2. Fall back to embedded LiteLLM database + manual overrides
 pub fn lookup_pricing(model: &str) -> Option<ModelPricing> {
+    // ── Tier 0: Check dynamic pricing first (from config/pricing.json) ────────
+    if let Ok(cache) = DYNAMIC_PRICING.lock() {
+        if let Some(&(input_per_1m, output_per_1m)) = cache.get(model) {
+            let provider = infer_provider(model);
+            return Some(ModelPricing {
+                model: model.to_string(),
+                provider,
+                input_usd_per_1m: f64_to_decimal(input_per_1m),
+                output_usd_per_1m: f64_to_decimal(output_per_1m),
+            });
+        }
+    }
+
     let db = &*DB;
 
     // ── Tier 1: Exact match ─────────────────────────────────────────────
