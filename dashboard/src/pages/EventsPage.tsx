@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { Activity, RefreshCw, X } from 'lucide-react'
 import { useEvents } from '@/api/hooks'
@@ -122,13 +122,16 @@ export function EventsPage() {
   const [autoRefresh, setAutoRefresh] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<AgentEvent | null>(null)
 
+  // Memoised: a fresh timestamp on every render would change the query key each time and refetch forever.
+  const since = useMemo(() => timeRangeToSince(timeRange), [timeRange])
+
   const { data, isLoading, refetch, isFetching } = useEvents(
     {
       agent_id: agentFilter || undefined,
       kind: kindFilter || undefined,
       protocol: protocolFilter || undefined,
       model: modelFilter || undefined,
-      since: timeRangeToSince(timeRange),
+      since,
       limit: 100,
     },
     autoRefresh,

@@ -2,152 +2,188 @@
   <img src="docs/assets/logo.png" alt="Govrix Scout Logo" width="200" />
 </p>
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Govrix_Scout-AI%20Agent%20Governance-8B5CF6?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiPjxwYXRoIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyem0tMiAxNWwtNS01IDEuNDEtMS40MUwxMCAxNC4xN2w3LjU5LTcuNTlMMTkgOGwtOSA5eiIvPjwvc3ZnPg==&logoColor=white" alt="Govrix Scout" />
-</p>
-
 <h1 align="center">Govrix Scout</h1>
 
 <p align="center">
-  <b>Open-Source AI Agent Observability, Governance & Compliance Platform</b>
+  <b>Know what your AI agents are doing before your auditor asks.</b><br/>
+  An open-source reverse proxy that logs, costs, and audits every LLM call your agents make. You change one base URL.
 </p>
 
 <p align="center">
-  <i>Know what your AI agents are doing — before your auditor asks.</i>
-</p>
-
-<br/>
-
-<p align="center">
-  <a href="#-quick-start"><img src="https://img.shields.io/badge/Setup-2%20Minutes-00C853?style=flat-square" alt="Setup Time" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue?style=flat-square" alt="License" /></a>
-  <a href="https://www.rust-lang.org"><img src="https://img.shields.io/badge/Rust-1.75+-DEA584?style=flat-square&logo=rust&logoColor=white" alt="Rust" /></a>
-  <a href="https://react.dev"><img src="https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React" /></a>
-  <a href="https://www.timescale.com"><img src="https://img.shields.io/badge/TimescaleDB-PG16-FDB515?style=flat-square&logo=postgresql&logoColor=white" alt="TimescaleDB" /></a>
+  <img src="https://img.shields.io/badge/Rust-1.75+-DEA584?style=flat-square&logo=rust&logoColor=white" alt="Rust" />
+  <img src="https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React" />
+  <img src="https://img.shields.io/badge/TimescaleDB-PG16-FDB515?style=flat-square&logo=postgresql&logoColor=white" alt="TimescaleDB" />
 </p>
 
 <p align="center">
+  <a href="https://govrix-scout-demo.vercel.app"><b>Live demo</b></a> ·
   <a href="https://govrix.dev"><b>Website</b></a> ·
-  <a href="https://docs.govrix.dev"><b>Docs</b></a> ·
-  <a href="#-quick-start"><b>Getting Started</b></a> ·
-  <a href="https://github.com/manaspros/govrix-scout/issues"><b>Issues</b></a> ·
-  <a href="#-govrix-platform-enterprise"><b>Enterprise</b></a>
+  <a href="#7-run-locally"><b>Run locally</b></a> ·
+  <a href="https://github.com/manaspros/govrix-scout/issues"><b>Issues</b></a>
 </p>
 
-<br/>
+---
+
+## 1. Live demo
+
+**https://govrix-scout-demo.vercel.app** is the real dashboard (19 pages) running against sample data.
+
+> **Demo mode.** On Vercel the Rust proxy and TimescaleDB are *not* running. The dashboard talks to a read-only TypeScript port of the API (`api/index.ts`) that serves about 1,400 seeded events from 8 fictional agents. The data is generated in memory with the same schema as the migrations and the same SHA-256 lineage-hash algorithm as the real proxy. Edits you make in the UI (budgets, kill switch, acknowledge alert) are not persisted. Details in [section 6](#6-prototype-vs-full-deployment).
+>
+> Where to click: **Overview**, then **Traces**, **Risk Overview**, **Compliance**, **PII Activity**, **Anomalies**. The **Sessions** page wants a session ID: get one from `/api/v1/demo` (`sample_session_id`).
 
 ---
 
-## What is Govrix Scout?
+## 2. The problem
 
-Govrix Scout is a **transparent reverse proxy** that sits between your AI agents and their APIs (OpenAI, Anthropic, etc.). It captures every request and response — **without touching your agent code**.
+Teams are putting LLM agents into production faster than they can answer basic questions about them:
 
-**One env var. Zero code changes. Full visibility.**
+- **Which agents exist?** Someone's script has been calling GPT-4 for three weeks. Nobody registered it.
+- **What did it send, and to whom?** Prompts carry emails, phone numbers, card numbers. Once they reach a third-party API you cannot take them back.
+- **What did it cost?** The provider invoice is one number per key. It does not say which agent, session, or prompt burned the budget.
+- **Can we prove it?** Auditors (SOC 2, HIPAA, EU AI Act Art. 12 record-keeping) ask for an event log you can show was not edited afterwards.
 
-```bash
-export OPENAI_BASE_URL=http://localhost:4000/proxy/openai/v1
-# That's it. Your agents keep working exactly as before.
+Who has this: platform, security, and compliance teams running more than a couple of agents, and anyone who has been surprised by an LLM bill.
+
+Why the usual options fall short:
+
+| Option | Gap |
+|--------|-----|
+| Provider dashboards | One key is one number. No per-agent attribution, no PII view, no cross-provider view. |
+| SDK-based tracing (instrument each app) | You must touch every agent's code and keep it current. Agents you do not own stay invisible. |
+| General API gateways | Built for routing and rate limits, not for per-agent audit, PII flags, or evidence an auditor can use. |
+| Hosted observability SaaS | Your prompts and responses leave your infrastructure. |
+
+---
+
+## 3. Why Govrix Scout is good
+
+**It sits on the wire, not in your code.** Point `OPENAI_BASE_URL` at the proxy and every call is captured. Agents are discovered from traffic. There is nothing to install in the agent.
+
+What it does, and where to check it:
+
+| Capability | Evidence in this repo |
+|------------|-----------------------|
+| One-line drop-in for OpenAI, Anthropic, MCP, A2A | Path routing for `/proxy/openai/`, `/proxy/anthropic/`, `/proxy/mcp/`, `/proxy/a2a/` in `crates/govrix-scout-proxy/src/proxy/handler.rs` |
+| Hot path on raw `hyper`, not a web framework | `hyper::server::conn::http1` in `proxy/mod.rs`; the management API is a separate `axum` server on its own port |
+| Logging never blocks agent traffic | Events go to a bounded `mpsc` channel via `try_send`. If it is full, the event is dropped and counted; the request still flows (`events.rs`) |
+| Batched writes off the request path | 4 writer tasks, batches of 500 rows or every 50 ms (`WriterConfig::default`) |
+| Tamper-evident ordering | Each event stores `sha256(prev_hash \| event_id \| agent_id \| timestamp_ms)`, starting from `GENESIS` per session (`compute_lineage_hash`) |
+| PII flags: email, phone, SSN, credit card, IP | `crates/govrix-policy/src/pii.rs` |
+| Cost per agent, model, and time | Token counts times a price table (`govrix-scout-common/src/models/pricing.rs`, `litellm_prices.json`) |
+| Anomaly alerts | 8 detectors: cost, latency, exfil, security, fanout, error-rate, behavioral, legacy (`proxy/src/anomaly/`) |
+| Time-series storage with compression and retention | Hypertable, compression, and retention policies in `init/004_create_hypertables.sql` |
+| Budgets, sessions, traces, kill switch, compliance views | Migrations `006` to `014`, 19 dashboard pages |
+
+**Claimed, not yet benchmarked:** "under 5 ms p99 added latency" (stated in `CLAUDE.md`, `CHANGELOG.md`, `CONTRIBUTING.md`). There is no benchmark harness in the repo yet. Treat it as a design target.
+
+**Be precise about the audit trail:** it is a linear hash chain per session (edits and deletions inside a session break every later hash), not a Merkle tree. The repo does not yet ship a verifier command, and chain state lives in proxy memory, so a proxy restart starts a new `GENESIS` per session.
+
+---
+
+## 4. How it works
+
+```mermaid
+flowchart LR
+    Agent["AI agents<br/>(any framework)"] -->|"OPENAI_BASE_URL=:4000/proxy/openai/v1"| Proxy
+    subgraph Scout ["Govrix Scout (Rust)"]
+        Proxy["Proxy :4000<br/>hyper hot path"]
+        Chan["bounded mpsc channel<br/>(100k, try_send)"]
+        Writers["4 batch writers<br/>(500 rows / 50 ms)"]
+        API["Management API :4001<br/>axum"]
+        Proxy -->|"fire and forget"| Chan --> Writers
+    end
+    Proxy <-->|"forwarded unchanged"| LLM["OpenAI / Anthropic / MCP"]
+    Writers --> DB[("TimescaleDB<br/>events, agents, costs...")]
+    API --> DB
+    UI["Dashboard :3000<br/>React + Vite"] --> API
 ```
 
-Now every AI call is automatically **logged**, **costed**, **scanned for PII**, and **attributed** to the agent that made it.
+1. The agent calls the proxy instead of the provider. The proxy forwards the request and streams the response back unchanged, including SSE.
+2. A copy of the exchange becomes an event carrying `session_id`, `timestamp`, `lineage_hash`, and `compliance_tag`. It is pushed onto a channel and the request path moves on.
+3. Writer tasks batch events into TimescaleDB and upsert the agent registry. Anomaly checks run after the flush, off the hot path.
+4. The dashboard reads from the management API.
 
-```text
-  ┌─────────────────┐       ┌────────────────────┐       ┌───────────────────┐
-  │                 │       │   Govrix Scout     │       │                   │
-  │   Your Agents   │ ────> │     (:4000)        │ ────> │  OpenAI / Claude  │
-  │                 │       └────────┬───────────┘       │                   │
-  └─────────────────┘                │                   └───────────────────┘
-                                     v
-                            ┌────────────────┐
-                            │  PostgreSQL    │
-                            │  & Dashboard   │
-                            └────────────────┘
-```
+If the database is down or the channel is full, traffic keeps flowing and events are dropped (counted in metrics). That is the fail-open design.
 
 ---
 
-## Why Govrix?
+## 5. Engineering tradeoffs
 
-| Principle | Description |
-|-----------|-------------|
-| **Zero Friction** | No SDKs to install. Just change one environment variable (`OPENAI_BASE_URL`). |
-| **Complete Autonomy** | Agents are auto-discovered by IP/header. No manual registration required. |
-| **Audit-Ready** | Cryptographically hashes every event in a SHA-256 Merkle chain for tamper evidence. |
-| **Privacy First** | Scans and flags 5 types of PII locally. Your data never leaves your infrastructure. |
-| **Fail-Open** | Internal errors never block agent traffic. Observability should never break production. |
-
----
-
-## Core Features
-
-| Feature | What it does |
-|---------|-------------|
-| **Agent Auto-Discovery** | Every agent is automatically detected and catalogued — no manual registration, no SDK |
-| **Full Event Logging** | Every request/response captured with model, tokens, cost, latency, and tool calls |
-| **Cost Attribution** | Track AI spend by agent, model, and time period — no more surprise bills |
-| **PII Detection** | Flags emails, phone numbers, SSNs, credit cards, and IPs in agent traffic |
-| **Tamper-Evident Audit Trail** | SHA-256 Merkle hash chain proves event ordering and integrity |
-| **Real-Time Dashboard** | 18-page web UI: overview, agents, events, costs, budgets, sessions, traces, compliance |
-| **Streaming Support** | Full SSE and chunked transfer support with <5ms p99 latency overhead |
-| **Policy Engine** | YAML-based rules to allow, block, or alert on agent behaviors |
-| **Budget Enforcement** | Set daily/monthly spend limits per agent or project with automatic alerts |
-| **Session & Trace Tracking** | Group related requests into sessions and distributed traces for debugging |
-| **Compliance Reports** | Generate artifacts ready for SOC 2, HIPAA, EU AI Act, and FINRA auditors |
-
-<details>
-<summary><b>Technical deep-dive</b></summary>
-<br/>
-
-- **Streaming Pipeline**: Tees SSE streams with under 5ms (p99) latency overhead using a Rust `hyper` hot-path — not axum, for maximum throughput.
-- **Async Write Buffer**: Fire-and-forget bounded `mpsc` channel (10K capacity) batches writes to TimescaleDB so I/O never blocks agent traffic.
-- **Compliance Invariant**: Every event carries mandatory fields: `session_id`, `timestamp`, `lineage_hash`, `compliance_tag`.
-- **Retention Policies**: TimescaleDB hypertables with configurable automatic data retention.
-- **Idempotent Migrations**: All 11 SQL migrations use `IF NOT EXISTS` — safe to re-run.
-
-</details>
-
-**Supported protocols:** OpenAI · Anthropic · MCP (Model Context Protocol) · A2A (Agent-to-Agent) · Custom HTTP
+| Decision | Chosen | Alternative | Why | Cost accepted |
+|----------|--------|-------------|-----|---------------|
+| Hot-path language and server | Rust with raw `hyper` | Go or Node gateway; or axum for everything | No GC pauses, so tail latency is predictable. Skips router and extractor overhead on the path every request takes (`CLAUDE.md` invariants) | Slower to change than a scripting gateway; needs the Rust toolchain and a C/C++ linker to build. The p99 target is not benchmarked yet |
+| Persisting events | Bounded `mpsc` channel plus batch writer tasks | Synchronous DB insert per request | A slow or dead database must not add latency or errors to agent calls. Batches of 500 cut insert overhead (`events.rs`) | **Events can be dropped** when the 100k channel is full. Fine for observability; not a lossless audit guarantee |
+| Integration method | Change one base URL (`OPENAI_BASE_URL`) | Per-language SDK or manual instrumentation | Works for agents you do not own and any framework that honours a base URL; no agent code to maintain | Only sees traffic routed through it; an agent can bypass it by calling the provider directly |
+| Failure mode | Fail-open (`GOVRIX_PROXY_FAIL_OPEN`) | Fail-closed: block when logging is down | Observability must never take production down | During an outage you lose visibility and enforcement, not availability |
+| Storage | TimescaleDB (hypertables, compression, retention) | Plain Postgres; ClickHouse or Kafka | Events are append-only time series, and compression and retention are one-liners while it stays plain SQL. ClickHouse is the planned tier 3 for scale (`CLAUDE.md` scale tiers) | Needs the Timescale extension. Managed Postgres that lacks it, or ships only the Apache-licensed subset, cannot run all migrations |
+| Tamper evidence | SHA-256 hash chain per session | Merkle tree with signed roots; external ledger | Cheap to compute on write; any in-session edit or deletion breaks the later hashes | Chain state is in memory (restart means new genesis); no verifier yet; not signed or externally anchored |
+| Hosting model | Self-hosted binary plus DB | SaaS | Prompts and responses never leave your infrastructure | You run and patch it. Report persistence and PDF export are stubbed in OSS |
 
 ---
 
-## Quick Start
+## 6. Prototype vs full deployment
 
-> **Requires:** [Docker](https://docker.com) & Docker Compose v2
+| | Live demo on Vercel | Full deployment (`docker compose`) |
+|---|---|---|
+| Dashboard | **Real.** The same React app from `dashboard/`, built and served as static files | Same |
+| API | **Ported.** `api/index.ts` (a Vercel Function on Node.js) re-implements the read endpoints the dashboard calls, with the same JSON shapes as the Rust handlers | **Real.** Rust `axum` API on :4001 |
+| Data | **Seeded.** About 1,400 events, 8 agents, 160 sessions/traces, 24 alerts, generated in memory from the repo's schema. The hash chain uses the real algorithm | **Real.** Written by the proxy into TimescaleDB |
+| Proxy (:4000) | **Not running** | **Real** |
+| Database | **None** | TimescaleDB (PostgreSQL 16) |
+| Writes (kill switch, budgets, acknowledge) | Accepted, kept in function memory only, reset hourly | Persisted |
+| Reports | Stubbed (also stubbed in the OSS API) | Stubbed in OSS |
 
-### Option A: One-Line Install
+**Why not run the real Rust API on Vercel?** Vercel has a Rust runtime (beta) and container-image functions. But the API is a thin layer over TimescaleDB: it needs a live database with hypertables, compression, and continuous aggregates (`init/014_continuous_aggregates.sql`). Neon, the Postgres on the Vercel Marketplace, supports only the Apache-2 subset of TimescaleDB (no compression, no continuous aggregates). The proxy also needs a long-lived process and an upstream LLM key. None of that fits a stateless function, so the lowest-risk path to a clickable demo is a read-only TypeScript port over seeded data. Run it locally to see the real thing.
 
-```bash
-# Linux / macOS
-curl -sSL https://govrix.dev/install.sh | bash
+Demo internals: `api/index.ts` (router), `api/_lib/seed.ts` (generator), `vercel.json` (rewrites `/api/*`, `/health`, `/ready`, `/metrics` to the function), `.vercelignore`. One dashboard fix came with it: `EventsPage` built a fresh `since` timestamp on every render, which changed the query key each time and refetched forever; it is now memoised.
 
-# Windows (PowerShell as Admin)
-iwr -useb https://raw.githubusercontent.com/manaspros/govrix-scout/main/install.ps1 | iex
-```
+---
 
-### Option B: Clone & Run
+## 7. Run locally
+
+Requires [Docker](https://docker.com) with Compose v2.
 
 ```bash
 git clone https://github.com/manaspros/govrix-scout.git
 cd govrix-scout
 docker compose -f docker/docker-compose.yml up -d
+curl http://localhost:4001/health      # {"status":"ok",...}
+# Dashboard: http://localhost:3000
 ```
 
-### What starts
+One-line installers: `curl -sSL https://govrix.dev/install.sh | bash` (Linux/macOS), or on Windows `iwr -useb https://raw.githubusercontent.com/manaspros/govrix-scout/main/install.ps1 | iex`.
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| **Proxy** | `4000` | Route your agents here |
-| **REST API** | `4001` | Dashboard reads data from here |
-| **Dashboard** | `3000` | Web UI — open in browser |
-| **TimescaleDB** | `5432` | Event storage (PostgreSQL 16) |
+| Proxy | 4000 | Route your agents here |
+| REST API | 4001 | Dashboard reads data from here |
+| Dashboard | 3000 | Web UI |
+| TimescaleDB | 5432 | Event storage (PostgreSQL 16) |
 
-### Connect Your Agents (Step-by-Step)
+**Environment variables** (read by the proxy; defaults live in `config/govrix.default.toml`):
 
-Govrix Scout works as a **transparent reverse proxy**. You change **one line** in your existing code — the API base URL — and every request flows through Govrix for logging, cost tracking, and compliance. **Your agent code, prompts, and logic stay exactly the same.**
+| Name | Meaning |
+|------|---------|
+| `GOVRIX_DATABASE_URL` | Postgres/TimescaleDB connection string |
+| `GOVRIX_PROXY_PORT`, `GOVRIX_API_PORT` | Proxy (4000) and API (4001) ports |
+| `GOVRIX_PROXY_FAIL_OPEN` | Keep forwarding traffic when internal errors occur (default on) |
+| `GOVRIX_PROXY__UPSTREAM_OPENAI`, `GOVRIX_PROXY__UPSTREAM_ANTHROPIC` | Upstream base URLs |
+| `GOVRIX_API_KEY` | If set, the management API requires `Authorization: Bearer <key>` |
+| `GOVRIX_LOG_LEVEL`, `GOVRIX_CONFIG`, `GOVRIX_POLICY_FILE` | Log level, config file path, policy YAML path |
 
-> **How it works:** Instead of your agent calling `api.openai.com` directly, it calls `localhost:4000` (Govrix). Govrix logs the request and forwards it to the real API. The response comes back through Govrix and is returned to your agent unchanged.
+**Upstream LLM key:** Govrix does not hold one. Your agent keeps using its own `OPENAI_API_KEY` / `ANTHROPIC_API_KEY`, and the proxy forwards it unchanged.
 
----
+Point an agent at it:
+
+```bash
+export OPENAI_BASE_URL=http://localhost:4000/proxy/openai/v1
+export ANTHROPIC_BASE_URL=http://localhost:4000/proxy/anthropic/v1
+```
+
+<details>
+<summary><b>Connect your agents: per-framework examples and troubleshooting</b></summary>
 
 #### Step 1 — Make sure Govrix Scout is running
 
@@ -329,70 +365,23 @@ curl http://localhost:4001/ready    # -> {"status":"ready"}
 | Slow responses | First request may take ~1s (cold start). Subsequent requests add <5ms overhead |
 | Dashboard blank on `:3000` | Ensure the dashboard container is running: `docker compose logs dashboard` |
 
----
 
-## Technical Architecture
+</details>
 
-Here's how Govrix Scout processes your agent traffic with near-zero latency overhead:
+<details>
+<summary><b>Run the demo (Vercel Function + dashboard) locally</b></summary>
 
-```mermaid
-flowchart TB
-    subgraph ClientLayer ["Client Layer"]
-        direction LR
-        Agent["AI Agents\n(LangChain, CrewAI, etc.)"]
-        Browser["Web Dashboard\n(React + Vite)"]
-    end
-
-    subgraph GovrixScout ["Govrix Scout (Rust)"]
-        direction TB
-        Proxy["Proxy Server\n(hyper, port 4000)\nHot-path routing"]
-        API["Management API\n(axum, port 4001)\nREST & Config"]
-        PolicyEngine["Policy Engine\nYAML Rules & Budgets"]
-        EventChannel["Event Channel\n(Bounded mpsc)"]
-        Writer["Background Writer\nAsync Batching"]
-
-        Proxy <-->|"Hook"| PolicyEngine
-        Proxy -->|"Fire & Forget"| EventChannel
-        EventChannel --> Writer
-    end
-
-    subgraph DataLayer ["Data Layer"]
-        DB[("PostgreSQL 16\n(TimescaleDB, port 5432)")]
-    end
-
-    subgraph UpstreamLayer ["Upstream Providers"]
-        direction LR
-        OpenAI["OpenAI API"]
-        Anthropic["Anthropic API"]
-    end
-
-    Agent <==>|"1. Request/Response"| Proxy
-    Proxy <==>|"2. Forwarded Traffic"| OpenAI
-    Proxy <==>|"2. Forwarded Traffic"| Anthropic
-
-    API <==>|"Reads/Writes Config"| DB
-    Writer -->|"3. Async Batched Writes"| DB
-
-    Browser <==>|"REST API Calls"| API
-
-    classDef proxy fill:#8B5CF6,stroke:#fff,stroke-width:2px,color:#fff
-    classDef db fill:#FDB515,stroke:#fff,stroke-width:2px,color:#000
-    classDef upstream fill:#10a37f,stroke:#fff,stroke-width:2px,color:#fff
-
-    class Proxy,API proxy
-    class DB db
-    class OpenAI,Anthropic upstream
+```bash
+cd dashboard && npm ci && npm run build && cd ..
+npx vercel dev          # serves dashboard/dist and api/index.ts
 ```
 
-**Key architecture decisions:**
+</details>
 
-- **Fail-Open Design:** The proxy uses a bounded non-blocking `mpsc` channel. If the database goes down, events are dropped but your agent traffic **continues to flow**.
-- **Minimal Latency:** The hot-path is built directly on `hyper` (bypassing axum's routing overhead) for sub-5ms p99 processing latency.
-- **Asynchronous Storage:** Database writes are batched in the background by a dedicated Tokio task — I/O never blocks the request path.
+<details>
+<summary><b>Project structure, database schema, REST API</b></summary>
 
----
-
-## Project Structure
+### Project structure
 
 ```
 govrix-scout/
@@ -404,10 +393,10 @@ govrix-scout/
 │   └── govrix-scout-reports/      # Compliance report generation (HTML, JSON, PDF)
 ├── dashboard/                     # React 18 + TypeScript + Vite + Tailwind CSS + Recharts
 │   └── src/
-│       ├── pages/                 # 18 pages: overview, agents, events, costs, budgets, etc.
+│       ├── pages/                 # 19 pages: overview, agents, events, costs, budgets, etc.
 │       ├── api/                   # Typed API client, hooks (TanStack Query v5), types
 │       └── components/            # Shared UI components
-├── init/                          # 11 idempotent SQL migrations (events, agents, costs, budgets, sessions, traces)
+├── init/                          # idempotent SQL migrations 000-014 (events, agents, costs, budgets, sessions, traces, alerts)
 ├── docker/                        # Dockerfiles + docker-compose (dev, local, production)
 ├── k8s/                           # Kubernetes manifests (namespace, deployment, service, configmap, secrets)
 ├── config/                        # Default config (govrix.default.toml) + example policies (YAML)
@@ -416,7 +405,7 @@ govrix-scout/
 └── tests/                         # Integration test directory
 ```
 
-### Database Schema (TimescaleDB)
+#### Database schema (TimescaleDB)
 
 | Table | Purpose |
 |-------|---------|
@@ -429,26 +418,24 @@ govrix-scout/
 | `sessions` | Session tracking — group related requests in a conversation |
 | `traces` | Distributed tracing data for debugging multi-step agent workflows |
 
-### REST API Endpoints (Port 4001)
+#### REST API endpoints (port 4001)
 
 | Endpoint | Description |
 |----------|-------------|
 | `GET /health`, `GET /ready` | Health and readiness checks |
-| `GET /api/events` | Query captured events with filters |
-| `GET /api/agents` | List discovered agents |
-| `GET /api/costs` | Cost breakdowns by agent/model/time |
-| `GET /api/reports/:type` | Generate compliance reports |
-| `GET /api/config` | Current proxy configuration |
+| `GET /api/v1/events` | Query captured events with filters |
+| `GET /api/v1/agents` | List discovered agents |
+| `GET /api/v1/costs/summary`, `/breakdown`, `/timeseries` | Cost breakdowns by agent/model/time |
+| `GET /api/v1/reports/types`, `POST /api/v1/reports/generate` | Generate compliance reports |
+| `GET /api/v1/config` | Current proxy configuration |
 
-All API endpoints support Bearer token authentication.
+Also: `/api/v1/traces`, `/alerts` (plus SSE stream), `/budgets/overview`, `/sessions`, `/compliance/{framework}`, `/risk/overview`, `/pii/activity`, `/policies`, `/kill-switch/*`. If `GOVRIX_API_KEY` is set, all `/api/v1/*` endpoints require Bearer auth.
 
----
-
-## Build from Source
+### Build from source
 
 > For contributors and developers. Most users should use [Quick Start](#quick-start) above.
 
-### Prerequisites
+#### Prerequisites
 
 | Tool | Version | Install |
 |------|---------|---------|
@@ -470,7 +457,7 @@ All API endpoints support Bearer token authentication.
 
 </details>
 
-### Build & Run
+#### Build and run
 
 ```bash
 # 1. Clone
@@ -484,14 +471,14 @@ docker compose -f docker/docker-compose.yml up -d postgres
 cargo build --release --workspace
 
 # 4. Run the proxy
-export DATABASE_URL=postgres://govrix:govrix_scout_dev@localhost:5432/govrix
+export GOVRIX_DATABASE_URL=postgres://govrix:govrix_scout_dev@localhost:5432/govrix
 RUST_LOG=info ./target/release/govrix-scout
 
 # 5. Run the dashboard (separate terminal)
 cd dashboard && pnpm install && pnpm dev
 ```
 
-### Development with hot-reload
+#### Hot reload
 
 ```bash
 cargo install cargo-watch          # one-time setup
@@ -500,7 +487,7 @@ make dev-proxy                     # proxy with hot-reload (terminal 1)
 make dev-dashboard                 # dashboard with hot-reload (terminal 2)
 ```
 
-### Run tests
+#### Tests
 
 ```bash
 cargo test --workspace             # Rust unit tests
@@ -508,7 +495,22 @@ cd dashboard && pnpm test          # Dashboard tests
 make ci                            # Full CI pipeline
 ```
 
+</details>
+
 ---
+
+## 8. Status and roadmap
+
+**Status:** v0.2.0 (see [CHANGELOG](CHANGELOG.md)). Proxy, API, 19-page dashboard, migrations 000 to 014, and Docker and Kubernetes manifests are in place. Report persistence and PDF export are stubbed in OSS.
+
+**Next, roughly in order:**
+- A benchmark harness to replace the "under 5 ms p99" claim with a measured number
+- A command to verify a session's lineage-hash chain, and persisting chain state across restarts
+- Policy enforcement beyond alert-only in OSS; PII masking before upstream (today in the Enterprise tier)
+- Optional Redis-stream sink (tier 2) and ClickHouse (tier 3) for higher event rates
+
+---
+
 
 ## Govrix Platform (Enterprise)
 

@@ -1,0 +1,22 @@
+# Demo deploy ships only dashboard/ + api/. Keep everything else out of the upload.
+crates/
+target/
+k8s/
+presentation/
+docker/
+init/
+scripts/
+tests/
+config/
+docs/
+.github/
+.cargo/
+C:Manascodegovrix-scoutdocs/
+dashboard/node_modules/
+dashboard/dist/
+*.log
+.env
+.env.*
+*.db
+*.sqlite
+uploads/

@@ -33,3 +33,4 @@ pgdata/
 
 # Local-only architecture/teaching docs (not for OSS publish)
 docs/
+.vercel

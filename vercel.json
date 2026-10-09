@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "echo \"install runs inside buildCommand\"",
+  "buildCommand": "cd dashboard && npm ci --no-audit --no-fund && npm run build",
+  "outputDirectory": "dashboard/dist",
+  "rewrites": [
+    { "source": "/health", "destination": "/api/index?path=health" },
+    { "source": "/ready", "destination": "/api/index?path=ready" },
+    { "source": "/metrics", "destination": "/api/index?path=metrics" },
+    { "source": "/api/:path*", "destination": "/api/index?path=api/:path*" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ],
+  "functions": {
+    "api/index.ts": { "maxDuration": 30 }
+  }
+}
